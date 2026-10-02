@@ -86,6 +86,12 @@
         </svg>
         Спільнота
       </a>
+      <a href="#" class="nav-item" id="nav-publish" onclick="showSection('publish', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Опублікувати
+      </a>
     </nav>
 
     <div class="sidebar-playlists-header">
@@ -451,6 +457,35 @@
           <p class="section-subtitle" id="search-results-count"></p>
         </div>
         <div class="tracks-list-full" id="search-list"></div>
+      </section>
+
+      <!-- PUBLISH SECTION -->
+      <section class="section" id="section-publish">
+        <div class="section-header">
+          <h1>Опублікувати</h1>
+          <p class="section-subtitle">Завантаж свою музику або відео на платформу</p>
+        </div>
+        <div class="publish-container" style="background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); max-width: 600px; margin: 0 auto;">
+          <div class="publish-field" style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Файл (Аудіо або Відео)</label>
+            <input type="file" id="publish-file" accept="audio/*,video/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
+          </div>
+          <div class="publish-field" style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Назва треку/відео</label>
+            <input type="text" id="publish-title" placeholder="Введіть назву..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
+          </div>
+          <div class="publish-field" style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Виконавець</label>
+            <input type="text" id="publish-artist" placeholder="Введіть виконавця..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
+          </div>
+          <div class="publish-field" style="margin-bottom: 24px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Обкладинка (опціонально)</label>
+            <input type="file" id="publish-cover" accept="image/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
+          </div>
+          <button class="publish-btn" onclick="publishMedia()" style="width: 100%; padding: 14px; border-radius: 8px; background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s;">
+            Опублікувати
+          </button>
+        </div>
       </section>
 
     </div>

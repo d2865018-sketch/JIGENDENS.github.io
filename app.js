@@ -2272,3 +2272,129 @@ async function deleteUserTrack(trackId) {
 
 // Init extractor drag-drop on DOMContentLoaded is called in main init
 
+// ===== PUBLISH MEDIA =====
+async function publishMedia() {
+  const fileInput = document.getElementById('publish-file');
+  const titleInput = document.getElementById('publish-title').value.trim();
+  const artistInput = document.getElementById('publish-artist').value.trim();
+  const coverInput = document.getElementById('publish-cover');
+  const btn = document.querySelector('.publish-btn');
+
+  if (!fileInput.files.length) {
+    if (typeof showNotification === 'function') showNotification('❌ Виберіть файл!');
+    return;
+  }
+  if (!titleInput || !artistInput) {
+    if (typeof showNotification === 'function') showNotification('❌ Введіть назву та виконавця!');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const coverFile = coverInput.files.length ? coverInput.files[0] : null;
+  const trackId = 'pub_' + Date.now();
+
+  btn.innerText = 'Завантаження...';
+  btn.disabled = true;
+
+  try {
+    const email = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.email : 'guest';
+    const user = typeof currentUser !== 'undefined' ? currentUser : null;
+    
+    if (!user) {
+      if (typeof showNotification === 'function') showNotification('❌ Увійдіть в акаунт, щоб опублікувати!');
+      btn.innerText = 'Опублікувати';
+      btn.disabled = false;
+      return;
+    }
+
+    // Upload audio
+    let audioUrl = '';
+    if (typeof swSaveAudio === 'function') {
+      audioUrl = await swSaveAudio(trackId, file);
+    } else {
+      audioUrl = URL.createObjectURL(file); // fallback locally if no storage
+    }
+    
+    if (!audioUrl) throw new Error('Не вдалося завантажити медіа');
+
+    // Handle cover (if present, upload to same bucket, else fallback)
+    let coverUrl = COVERS[Math.floor(Math.random() * COVERS.length)];
+    if (coverFile && typeof supabaseClient !== 'undefined') {
+      try {
+        const session = await swGetSession();
+        if (session) {
+          const ext = coverFile.name.split('.').pop().toLowerCase() || 'jpg';
+          const coverPath = `${session.user.id}/cover_${trackId}.${ext}`;
+          const { error } = await supabaseClient.storage.from('music').upload(coverPath, coverFile, { upsert: true, contentType: coverFile.type });
+          if (!error) {
+            const { data } = supabaseClient.storage.from('music').getPublicUrl(coverPath);
+            coverUrl = data.publicUrl;
+          }
+        }
+      } catch (e) {
+        console.log('Cover upload error', e);
+      }
+    } else if (coverFile) {
+      coverUrl = URL.createObjectURL(coverFile); // fallback local
+    }
+
+    // Prepare track object
+    const newTrack = {
+      id: trackId,
+      title: titleInput,
+      artist: artistInput,
+      src: audioUrl,
+      cover: coverUrl,
+      is_public: true
+    };
+
+    // Save to DB
+    let success = false;
+    if (typeof swSaveTracksMeta === 'function') {
+      success = await swSaveTracksMeta(email, [newTrack]);
+    } else {
+      // Local fallback
+      userTracks.unshift(newTrack);
+      success = true;
+    }
+
+    if (success) {
+      if (typeof showNotification === 'function') showNotification('✅ Успішно опубліковано!');
+      
+      // Clear form
+      fileInput.value = '';
+      document.getElementById('publish-title').value = '';
+      document.getElementById('publish-artist').value = '';
+      coverInput.value = '';
+      
+      // Add to local state if not added already
+      if (typeof swSaveTracksMeta === 'function') {
+        const publicTrackObj = {
+            id: trackId,
+            title: titleInput,
+            artist: artistInput,
+            genre: 'Спільнота',
+            cover: coverUrl,
+            src: audioUrl,
+            is_public: true,
+            liked: false
+        };
+        // It should be fetched again on community load, or we can just navigate there.
+      }
+      
+      // Go to community section to see it
+      if (typeof showSection === 'function') {
+        showSection('community', document.getElementById('nav-community'));
+      }
+    } else {
+      throw new Error('Помилка збереження метаданих');
+    }
+
+  } catch (err) {
+    console.error(err);
+    if (typeof showNotification === 'function') showNotification('❌ ' + (err.message || 'Помилка'));
+  } finally {
+    btn.innerText = 'Опублікувати';
+    btn.disabled = false;
+  }
+}
