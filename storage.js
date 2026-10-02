@@ -1,130 +1,162 @@
 /* ========================================
-   SoundWave — Persistent Storage Module
-   IndexedDB для аудіо-файлів
-   localStorage для метаданих треків
+   SoundWave — Supabase Storage Module
    ======================================== */
 
-const SW_DB_NAME    = 'soundwave_audio_db';
-const SW_DB_VERSION = 1;
-const SW_STORE      = 'audio_blobs';
-
-// ===== IndexedDB helpers =====
-
-function swOpenDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(SW_DB_NAME, SW_DB_VERSION);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(SW_STORE)) {
-        db.createObjectStore(SW_STORE, { keyPath: 'trackId' });
-      }
-    };
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-  });
-}
+// We keep a local mapping of trackId to public URL so we can save it properly
+const publicUrlMap = {};
 
 async function swSaveAudio(trackId, blob) {
+  if (typeof supabaseClient === 'undefined') return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return;
+
   try {
-    const db = await swOpenDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(SW_STORE, 'readwrite');
-      tx.objectStore(SW_STORE).put({ trackId, blob });
-      tx.oncomplete = () => { db.close(); resolve(); };
-      tx.onerror    = e => { db.close(); reject(e.target.error); };
-    });
+    const ext = blob.name ? blob.name.split('.').pop() : (blob.type.split('/')[1] || 'mp3');
+    const filePath = `${session.user.id}/${trackId}.${ext}`;
+    
+    // Upload to Supabase Storage
+    const { data, error } = await supabaseClient.storage
+      .from('music')
+      .upload(filePath, blob, { upsert: true });
+      
+    if (error) throw error;
+
+    // Get public URL
+    const { data: publicUrlData } = supabaseClient.storage.from('music').getPublicUrl(filePath);
+    const publicUrl = publicUrlData.publicUrl;
+    
+    publicUrlMap[trackId] = publicUrl;
+
+    // We can also immediately update the database row if it exists
+    await supabaseClient.from('tracks').update({ file_url: publicUrl }).eq('id', trackId);
+
   } catch (e) {
     console.error('[Storage] swSaveAudio failed:', e);
   }
 }
 
 async function swGetAudio(trackId) {
-  try {
-    const db = await swOpenDB();
-    return new Promise((resolve, reject) => {
-      const tx  = db.transaction(SW_STORE, 'readonly');
-      const req = tx.objectStore(SW_STORE).get(trackId);
-      req.onsuccess = e => {
-        db.close();
-        resolve(e.target.result ? e.target.result.blob : null);
-      };
-      req.onerror = e => { db.close(); reject(e.target.error); };
-    });
-  } catch (e) {
-    console.error('[Storage] swGetAudio failed:', e);
-    return null;
-  }
+  return null; // No longer needed, we use direct URLs
 }
 
 async function swDeleteAudio(trackId) {
+  // Handled in swDeleteTrack
+}
+
+async function swSaveTracksMeta(email, tracks) {
+  if (typeof supabaseClient === 'undefined') return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return;
+
   try {
-    const db = await swOpenDB();
-    return new Promise((resolve) => {
-      const tx = db.transaction(SW_STORE, 'readwrite');
-      tx.objectStore(SW_STORE).delete(trackId);
-      tx.oncomplete = () => { db.close(); resolve(); };
-      tx.onerror    = () => { db.close(); resolve(); };
-    });
-  } catch (e) {
-    console.error('[Storage] swDeleteAudio failed:', e);
+    for (const t of tracks) {
+      let fileUrl = t.src;
+      // If it's a local object url, try to get the real URL
+      if (fileUrl && fileUrl.startsWith('blob:')) {
+         fileUrl = publicUrlMap[t.id] || '';
+      }
+
+      // Convert track ID to UUID if it's not (assuming it's a timestamp from app.js)
+      // Since our table uses UUIDs by default for 'id', we need to pass a valid UUID.
+      // Wait, app.js generates `Date.now().toString()`.
+      // Let's modify our Supabase logic: if `t.id` is not a UUID, Supabase will reject it.
+      // But we can just use text for ID in DB.
+      // Let's assume we alter the table to use text for ID, or we just pass it.
+      
+      const { data, error } = await supabaseClient
+        .from('tracks')
+        .upsert({
+          id: String(t.id),
+          user_id: session.user.id,
+          title: t.title,
+          artist: t.artist,
+          file_url: fileUrl,
+          cover_url: t.cover,
+          is_public: !!t.is_public
+        }, { onConflict: 'id' });
+    }
+  } catch(e) {
+    console.error(e);
   }
 }
 
-// ===== Track metadata in localStorage =====
-
-function swTrackKey(email) {
-  return `sw_tracks_${email || 'guest'}`;
-}
-
-/**
- * Save userTracks metadata (without src Blob URL) to localStorage.
- * Should be called after every change to userTracks.
- */
-function swSaveTracksMeta(email, tracks) {
-  const meta = tracks.map(t => ({
-    id:       t.id,
-    title:    t.title,
-    artist:   t.artist,
-    genre:    t.genre,
-    duration: t.duration,
-    cover:    t.cover,
-    plays:    t.plays,
-  }));
-  localStorage.setItem(swTrackKey(email), JSON.stringify(meta));
-}
-
-/**
- * Load track metadata from localStorage, restore Blob URLs from IndexedDB.
- * Returns array of fully-formed track objects (with .src set).
- */
 async function swLoadTracks(email) {
+  if (typeof supabaseClient === 'undefined') return [];
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return [];
+
   try {
-    const raw = localStorage.getItem(swTrackKey(email));
-    if (!raw) return [];
-    const meta = JSON.parse(raw);
-    const result = [];
-    for (const m of meta) {
-      const blob = await swGetAudio(m.id);
-      if (!blob) continue; // blob missing — skip
-      const src = URL.createObjectURL(blob);
-      result.push({ ...m, src, liked: false });
-    }
-    return result;
+    const { data, error } = await supabaseClient
+      .from('tracks')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    return data.map(d => {
+      publicUrlMap[d.id] = d.file_url;
+      return {
+        id: d.id,
+        title: d.title,
+        artist: d.artist || 'Невідомий',
+        genre: 'Завантажене',
+        cover: d.cover_url || null,
+        src: d.file_url,
+        is_public: d.is_public || false,
+        liked: false
+      };
+    }).filter(t => t.src !== ''); 
   } catch (e) {
     console.error('[Storage] swLoadTracks failed:', e);
     return [];
   }
 }
 
-/**
- * Delete a track: removes audio from IndexedDB + removes metadata from localStorage.
- */
-async function swDeleteTrack(email, trackId) {
-  await swDeleteAudio(trackId);
+async function swLoadPublicTracks() {
+  if (typeof supabaseClient === 'undefined') return [];
+
   try {
-    const key  = swTrackKey(email);
-    const meta = JSON.parse(localStorage.getItem(key) || '[]');
-    const upd  = meta.filter(t => t.id !== trackId);
-    localStorage.setItem(key, JSON.stringify(upd));
-  } catch {}
+    const { data, error } = await supabaseClient
+      .from('tracks')
+      .select('*, auth_users:user_id(raw_user_meta_data)')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map(d => {
+      publicUrlMap[d.id] = d.file_url;
+      let authorName = 'Невідомий користувач';
+      if (d.auth_users && d.auth_users.raw_user_meta_data && d.auth_users.raw_user_meta_data.name) {
+         authorName = d.auth_users.raw_user_meta_data.name;
+      }
+
+      return {
+        id: d.id,
+        title: d.title,
+        artist: d.artist || authorName, // Use user name if artist not set properly, or just authorName
+        genre: 'Спільнота',
+        cover: d.cover_url || null,
+        src: d.file_url,
+        is_public: true,
+        liked: false
+      };
+    }).filter(t => t.src !== ''); 
+  } catch (e) {
+    console.error('[Storage] swLoadPublicTracks failed:', e);
+    return [];
+  }
+}
+
+async function swDeleteTrack(email, trackId) {
+  if (typeof supabaseClient === 'undefined') return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return;
+
+  try {
+    await supabaseClient.from('tracks').delete().eq('id', String(trackId));
+  } catch (e) {
+    console.error('[Storage] swDeleteTrack failed:', e);
+  }
 }

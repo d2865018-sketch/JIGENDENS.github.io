@@ -80,6 +80,12 @@
         </svg>
         MP3Tag Редактор
       </a>
+      <a href="#" class="nav-item" id="nav-community" onclick="showSection('community', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
+        </svg>
+        Спільнота
+      </a>
     </nav>
 
     <div class="sidebar-playlists-header">
@@ -411,6 +417,23 @@
               <input type="text" id="mp3tag-genre" placeholder="Введи жанр або альбом..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
             </div>
             
+            <div class="ext-save-field" style="margin-bottom:15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+              <div>
+                <label style="margin:0; font-weight: 500;">Публічний трек 🌍</label>
+                <p style="margin: 4px 0 0; font-size: 11px; color: var(--text-muted);">Інші користувачі зможуть слухати цей трек</p>
+              </div>
+              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                <input type="checkbox" id="mp3tag-public" style="opacity: 0; width: 0; height: 0;">
+                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-hover); transition: .4s; border-radius: 24px;"></span>
+              </label>
+            </div>
+            
+            <style>
+              #mp3tag-public:checked + .slider { background-color: var(--primary); }
+              .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+              #mp3tag-public:checked + .slider:before { transform: translateX(20px); }
+            </style>
+
             <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
               <button class="upload-btn" style="flex:1" onclick="saveMp3Tag()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:8px; vertical-align:text-bottom;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>

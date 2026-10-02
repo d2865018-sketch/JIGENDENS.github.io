@@ -432,6 +432,9 @@ function selectMp3TagTrack(id) {
   document.getElementById('mp3tag-artist').value = track.artist || '';
   document.getElementById('mp3tag-genre').value = track.genre || '';
   
+  const publicToggle = document.getElementById('mp3tag-public');
+  if (publicToggle) publicToggle.checked = track.is_public || false;
+  
   renderMp3TagCoverPreview();
   renderMp3TagList(); // refresh active state
 }
@@ -466,6 +469,9 @@ function saveMp3Tag() {
   track.artist = document.getElementById('mp3tag-artist').value || 'Невідомий виконавець';
   track.genre = document.getElementById('mp3tag-genre').value || track.genre;
   if (tempMp3TagCover) track.cover = tempMp3TagCover;
+  
+  const publicToggle = document.getElementById('mp3tag-public');
+  if (publicToggle) track.is_public = publicToggle.checked;
   
   swSaveTracksMeta(currentUser.email, userTracks);
   showNotification('💾 Теги успішно збережено');
@@ -1070,6 +1076,40 @@ function showSection(name, el) {
   if (name === 'explore') renderExploreList(currentGenreFilter);
   if (name === 'extractor') renderExtSavedList();
   if (name === 'mp3tag') renderMp3TagList();
+  if (name === 'community') renderCommunityList();
+}
+
+async function renderCommunityList() {
+  const container = document.getElementById('community-list');
+  if (!container) return;
+  container.innerHTML = '<div class="empty-state" style="text-align:center; padding:40px; color:var(--text-muted);"><div class="spinner"></div> Завантаження...</div>';
+
+  let publicTracks = [];
+  if (typeof swLoadPublicTracks === 'function') {
+    publicTracks = await swLoadPublicTracks();
+  }
+
+  if (publicTracks.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span>🌍</span>
+        <p>Поки що немає публічних треків. Будь першим!</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  publicTracks.forEach((track) => {
+    // We add them to our global tracks array if they are not there, so we can play them
+    const existingIdx = tracks.findIndex(t => t.id === track.id);
+    let finalIdx = existingIdx;
+    if (existingIdx === -1) {
+      tracks.push(track);
+      finalIdx = tracks.length - 1;
+    }
+    
+    container.appendChild(createTrackItem(tracks[finalIdx], finalIdx, 'community-list'));
+  });
 }
 
 function toggleSidebar() {
