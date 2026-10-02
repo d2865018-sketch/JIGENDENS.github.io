@@ -88,8 +88,11 @@ function switchTab(tab) {
   const isLogin = tab === 'login';
   const isRegister = tab === 'register';
   const isVerify = tab === 'verify';
+  const isForgot = tab === 'forgot';
+  const isForgotVerify = tab === 'forgot-verify';
+  const isNewPassword = tab === 'new-password';
 
-  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-login').classList.toggle('active', isLogin || isForgot || isForgotVerify || isNewPassword);
   document.getElementById('tab-register').classList.toggle('active', isRegister || isVerify); // Keep register tab active visually during verify
   
   document.getElementById('form-login').classList.toggle('active', isLogin);
@@ -97,6 +100,15 @@ function switchTab(tab) {
   
   const formVerify = document.getElementById('form-verify');
   if (formVerify) formVerify.classList.toggle('active', isVerify);
+
+  const formForgot = document.getElementById('form-forgot');
+  if (formForgot) formForgot.classList.toggle('active', isForgot);
+
+  const formForgotVerify = document.getElementById('form-forgot-verify');
+  if (formForgotVerify) formForgotVerify.classList.toggle('active', isForgotVerify);
+
+  const formNewPassword = document.getElementById('form-new-password');
+  if (formNewPassword) formNewPassword.classList.toggle('active', isNewPassword);
 
   clearErrors();
 
@@ -115,6 +127,9 @@ function switchTab(tab) {
     }
     else if (isRegister) input = document.getElementById('reg-name');
     else if (isVerify) input = document.getElementById('reg-code');
+    else if (isForgot) input = document.getElementById('forgot-email');
+    else if (isForgotVerify) input = document.getElementById('forgot-code');
+    else if (isNewPassword) input = document.getElementById('new-password');
     if (input) input.focus();
   }, 100);
 }
@@ -222,6 +237,101 @@ function verifyRegistrationCode(e) {
       loginSuccess(user, true);
     }, 1400);
   }, 700);
+}
+
+let pendingRecovery = null;
+
+function handleForgot(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+  const errEl = document.getElementById('forgot-error');
+  const btn = document.getElementById('forgot-submit');
+
+  clearErrors();
+
+  if (!isValidEmail(email)) {
+    return showError(errEl, 'Введи коректний email');
+  }
+
+  const users = getUsers();
+  const user = users.find(u => u.email === email);
+  if (!user) {
+    return showError(errEl, 'Акаунт з таким email не знайдено');
+  }
+
+  pendingRecovery = {
+    email: email,
+    code: Math.floor(100000 + Math.random() * 900000).toString()
+  };
+
+  btn.classList.add('loading');
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    
+    emailjs.send('service_jq1o0or', 'template_gooc6ts', {
+      to_email: email,
+      name: user.name,
+      email: email,
+      code: pendingRecovery.code
+    }).then(function() {
+      document.getElementById('forgot-verify-text').innerHTML = `Код відправлено на<br><b>${email}</b>`;
+      document.getElementById('forgot-code').value = '';
+      switchTab('forgot-verify');
+      if (typeof showNotification === 'function') {
+        showNotification(`📨 Код відправлено на ${email}`);
+      }
+    }, function(error) {
+      showError(errEl, `Помилка EmailJS: ` + JSON.stringify(error));
+    });
+  }, 700);
+}
+
+function verifyForgotCode(e) {
+  e.preventDefault();
+  const code = document.getElementById('forgot-code').value.trim();
+  const err = document.getElementById('forgot-code-error');
+  const btn = document.getElementById('forgot-verify-submit');
+  
+  clearErrors();
+
+  if (code !== pendingRecovery.code) {
+    return showError(err, '❌ Невірний код підтвердження');
+  }
+
+  btn.classList.add('loading');
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    switchTab('new-password');
+  }, 500);
+}
+
+function handleNewPassword(e) {
+  e.preventDefault();
+  const newPass = document.getElementById('new-password').value;
+  const errEl = document.getElementById('new-password-error');
+  const btn = document.getElementById('new-password-submit');
+
+  clearErrors();
+
+  if (newPass.length < 6) {
+    return showError(errEl, 'Пароль повинен містити мінімум 6 символів');
+  }
+
+  btn.classList.add('loading');
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    
+    const users = getUsers();
+    const idx = users.findIndex(u => u.email === pendingRecovery.email);
+    if (idx !== -1) {
+      users[idx].password = hashPassword(newPass);
+      saveUsers(users);
+      showSuccess('form-new-password', 'Пароль успішно змінено! 🎉');
+      setTimeout(() => {
+        openAuth('login');
+      }, 1500);
+    }
+  }, 600);
 }
 
 // ===== LOGIN =====

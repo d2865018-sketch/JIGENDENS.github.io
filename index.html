@@ -660,6 +660,9 @@
             </button>
           </div>
         </div>
+        <div style="text-align: right; margin-bottom: 12px;">
+          <a href="#" onclick="switchTab('forgot')" style="font-size: 13px; color: var(--text-muted); text-decoration: none;">Забули пароль?</a>
+        </div>
         <div class="auth-error" id="login-error"></div>
         <button type="submit" class="auth-submit" id="login-submit">
           <span>Увійти</span>
@@ -732,6 +735,69 @@
           </svg>
         </button>
         <p class="auth-switch">Вже є акаунт? <a href="#" onclick="switchTab('login')">Увійти</a></p>
+      </form>
+
+      <!-- FORGOT PASSWORD FORM -->
+      <form class="auth-form" id="form-forgot" onsubmit="handleForgot(event)">
+        <div class="auth-greeting">
+          <h2>Відновлення паролю 🔒</h2>
+          <p>Введи email, щоб скинути пароль</p>
+        </div>
+        <div class="auth-field">
+          <label for="forgot-email">Email</label>
+          <div class="auth-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <input type="email" id="forgot-email" placeholder="твій@email.com" required />
+          </div>
+        </div>
+        <div class="auth-error" id="forgot-error"></div>
+        <button type="submit" class="auth-submit" id="forgot-submit">
+          <span>Надіслати код</span>
+        </button>
+        <p class="auth-switch">Згадали пароль? <a href="#" onclick="switchTab('login')">Увійти</a></p>
+      </form>
+
+      <!-- VERIFY RECOVERY CODE FORM -->
+      <form class="auth-form" id="form-forgot-verify" onsubmit="verifyForgotCode(event)">
+        <div style="text-align:center;margin-bottom:20px;">
+          <h3 style="font-size:18px;margin-bottom:8px;">Перевірка коду</h3>
+          <p style="color:var(--text-muted);font-size:13px;" id="forgot-verify-text">
+            Код відправлено на email
+          </p>
+        </div>
+        <div class="auth-field" style="margin-bottom:24px;">
+          <input type="text" id="forgot-code" placeholder="------" maxlength="6" style="text-align:center;font-size:24px;letter-spacing:8px;padding:12px;" required />
+        </div>
+        <div class="auth-error" id="forgot-code-error" style="text-align:center;margin-bottom:16px;"></div>
+        <button type="submit" class="auth-submit" id="forgot-verify-submit">
+          <span>Підтвердити</span>
+        </button>
+        <p class="auth-switch" style="margin-top:16px;"><a href="#" onclick="switchTab('forgot')">Змінити email</a></p>
+      </form>
+
+      <!-- NEW PASSWORD FORM -->
+      <form class="auth-form" id="form-new-password" onsubmit="handleNewPassword(event)">
+        <div class="auth-greeting">
+          <h2>Новий пароль 🔑</h2>
+          <p>Придумай новий надійний пароль</p>
+        </div>
+        <div class="auth-field">
+          <label for="new-password">Новий пароль</label>
+          <div class="auth-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input type="password" id="new-password" placeholder="Мінімум 6 символів" required minlength="6" />
+          </div>
+        </div>
+        <div class="auth-error" id="new-password-error"></div>
+        <button type="submit" class="auth-submit" id="new-password-submit">
+          <span>Зберегти пароль</span>
+        </button>
       </form>
 
       <!-- VERIFY EMAIL FORM -->
