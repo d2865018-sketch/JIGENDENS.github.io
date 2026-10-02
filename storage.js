@@ -1,96 +1,125 @@
 /* ========================================
-   SoundWave — Supabase Storage Module
+   SoundWave — Supabase Storage Module (fixed)
    ======================================== */
 
-// We keep a local mapping of trackId to public URL so we can save it properly
 const publicUrlMap = {};
 
+// Показуємо помилку не через alert (він спамить для кожного треку)
+function swNotify(msg) {
+  console.warn('[Storage]', msg);
+  if (typeof showNotification === 'function') showNotification(msg);
+}
+
+async function swGetSession() {
+  if (typeof supabaseClient === 'undefined') return null;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Завантажує файл у bucket "music" і ПОВЕРТАЄ публічний URL (або null).
+ * Рядок у таблиці тут не чіпаємо — його створює swSaveTracksMeta (upsert).
+ */
 async function swSaveAudio(trackId, blob) {
-  if (typeof supabaseClient === 'undefined') return;
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) return;
+  const session = await swGetSession();
+  if (!session) return null;
 
   try {
-    const ext = blob.name ? blob.name.split('.').pop() : (blob.type.split('/')[1] || 'mp3');
+    const ext = blob.name
+      ? blob.name.split('.').pop().toLowerCase()
+      : ((blob.type.split('/')[1] || 'mp3').replace('mpeg', 'mp3'));
     const filePath = `${session.user.id}/${trackId}.${ext}`;
-    
-    // Upload to Supabase Storage
-    const { data, error } = await supabaseClient.storage
+
+    const { error } = await supabaseClient.storage
       .from('music')
-      .upload(filePath, blob, { upsert: true });
-      
+      .upload(filePath, blob, { upsert: true, contentType: blob.type || 'audio/mpeg' });
+
     if (error) {
-      alert("Помилка завантаження файлу в Storage: " + error.message);
-      throw error;
+      swNotify('❌ Помилка завантаження файлу: ' + error.message);
+      return null;
     }
 
-    // Get public URL
-    const { data: publicUrlData } = supabaseClient.storage.from('music').getPublicUrl(filePath);
-    const publicUrl = publicUrlData.publicUrl;
-    
-    publicUrlMap[trackId] = publicUrl;
-
-    // We can also immediately update the database row if it exists
-    await supabaseClient.from('tracks').update({ file_url: publicUrl }).eq('id', trackId);
-
+    const { data } = supabaseClient.storage.from('music').getPublicUrl(filePath);
+    publicUrlMap[trackId] = data.publicUrl;
+    return data.publicUrl;
   } catch (e) {
     console.error('[Storage] swSaveAudio failed:', e);
+    swNotify('❌ Немає зв’язку з сервером (Supabase)');
+    return null;
   }
 }
 
 async function swGetAudio(trackId) {
-  return null; // No longer needed, we use direct URLs
+  return null;
 }
 
-async function swDeleteAudio(trackId) {
-  // Handled in swDeleteTrack
-}
+async function swDeleteAudio(trackId) {}
 
+/**
+ * Зберігає метадані всіх треків одним запитом.
+ * Треки, у яких ще немає справжнього URL (blob:), пропускаються —
+ * інакше в базі з'являється порожній file_url і трек зникає після перезавантаження.
+ */
 async function swSaveTracksMeta(email, tracks) {
-  if (typeof supabaseClient === 'undefined') return;
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) return;
+  const session = await swGetSession();
+  if (!session) return false;
+
+  const rows = [];
+  for (const t of tracks) {
+    let fileUrl = t.src || '';
+    if (fileUrl.startsWith('blob:')) fileUrl = publicUrlMap[t.id] || '';
+    if (!fileUrl) continue;
+
+    rows.push({
+      id: String(t.id),
+      user_id: session.user.id,
+      title: t.title,
+      artist: t.artist,
+      file_url: fileUrl,
+      cover_url: t.cover,
+      is_public: !!t.is_public
+    });
+  }
+  if (rows.length === 0) return true;
 
   try {
-    for (const t of tracks) {
-      let fileUrl = t.src;
-      // If it's a local object url, try to get the real URL
-      if (fileUrl && fileUrl.startsWith('blob:')) {
-         fileUrl = publicUrlMap[t.id] || '';
-      }
+    const { error } = await supabaseClient
+      .from('tracks')
+      .upsert(rows, { onConflict: 'id' });
 
-      // Convert track ID to UUID if it's not (assuming it's a timestamp from app.js)
-      // Since our table uses UUIDs by default for 'id', we need to pass a valid UUID.
-      // Wait, app.js generates `Date.now().toString()`.
-      // Let's modify our Supabase logic: if `t.id` is not a UUID, Supabase will reject it.
-      // But we can just use text for ID in DB.
-      // Let's assume we alter the table to use text for ID, or we just pass it.
-      
-      const { data, error } = await supabaseClient
-        .from('tracks')
-        .upsert({
-          id: String(t.id),
-          user_id: session.user.id,
-          title: t.title,
-          artist: t.artist,
-          file_url: fileUrl,
-          cover_url: t.cover,
-          is_public: !!t.is_public
-        }, { onConflict: 'id' });
-        
-      if (error) {
-        alert("Помилка бази даних при збереженні: " + error.message);
-        console.error("Upsert error:", error);
-      }
+    if (error) {
+      console.error('Upsert error:', error);
+      swNotify('❌ Помилка збереження в базі: ' + error.message);
+      return false;
     }
-  } catch(e) {
-    console.error(e);
+    return true;
+  } catch (e) {
+    console.error('[Storage] swSaveTracksMeta failed:', e);
+    swNotify('❌ Немає зв’язку з сервером (Supabase)');
+    return false;
   }
 }
 
+function swMapRow(d, genre, forcePublic) {
+  publicUrlMap[d.id] = d.file_url;
+  return {
+    id: d.id,
+    title: d.title,
+    artist: d.artist || 'Невідомий',
+    genre,
+    cover: d.cover_url || null,
+    src: d.file_url,
+    is_public: forcePublic || d.is_public || false,
+    liked: false
+  };
+}
+
 async function swLoadTracks(email) {
-  if (typeof supabaseClient === 'undefined') return [];
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  const session = await swGetSession();
   if (!session) return [];
 
   try {
@@ -101,25 +130,13 @@ async function swLoadTracks(email) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      alert("Помилка завантаження треків: " + error.message);
-      throw error;
+      swNotify('❌ Помилка завантаження треків: ' + error.message);
+      return [];
     }
-
-    return data.map(d => {
-      publicUrlMap[d.id] = d.file_url;
-      return {
-        id: d.id,
-        title: d.title,
-        artist: d.artist || 'Невідомий',
-        genre: 'Завантажене',
-        cover: d.cover_url || null,
-        src: d.file_url,
-        is_public: d.is_public || false,
-        liked: false
-      };
-    }).filter(t => t.src !== ''); 
+    return data.map(d => swMapRow(d, 'Завантажене', false)).filter(t => t.src);
   } catch (e) {
     console.error('[Storage] swLoadTracks failed:', e);
+    swNotify('❌ Немає зв’язку з сервером (Supabase)');
     return [];
   }
 }
@@ -135,24 +152,10 @@ async function swLoadPublicTracks() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      alert("Помилка завантаження Спільноти: " + error.message);
-      throw error;
+      swNotify('❌ Помилка завантаження Спільноти: ' + error.message);
+      return [];
     }
-
-    return data.map(d => {
-      publicUrlMap[d.id] = d.file_url;
-
-      return {
-        id: d.id,
-        title: d.title,
-        artist: d.artist || 'Невідомий виконавець',
-        genre: 'Спільнота',
-        cover: d.cover_url || null,
-        src: d.file_url,
-        is_public: true,
-        liked: false
-      };
-    }).filter(t => t.src !== ''); 
+    return data.map(d => swMapRow(d, 'Спільнота', true)).filter(t => t.src);
   } catch (e) {
     console.error('[Storage] swLoadPublicTracks failed:', e);
     return [];
@@ -160,12 +163,18 @@ async function swLoadPublicTracks() {
 }
 
 async function swDeleteTrack(email, trackId) {
-  if (typeof supabaseClient === 'undefined') return;
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  const session = await swGetSession();
   if (!session) return;
 
   try {
+    // Видаляємо і файл зі Storage, якщо вдається визначити шлях
+    const url = publicUrlMap[trackId];
+    if (url && url.includes('/music/')) {
+      const path = decodeURIComponent(url.split('/music/')[1].split('?')[0]);
+      await supabaseClient.storage.from('music').remove([path]);
+    }
     await supabaseClient.from('tracks').delete().eq('id', String(trackId));
+    delete publicUrlMap[trackId];
   } catch (e) {
     console.error('[Storage] swDeleteTrack failed:', e);
   }
