@@ -3,8 +3,9 @@
    ======================================== */
 
 // ===== CONSTANTS =====
-const USERS_KEY = 'soundwave_users';
-const SESSION_KEY = 'soundwave_session';
+const SUPABASE_URL = 'https://mdadbmwwnjukjtqdpyba.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oOr3E-QWA_R5orAPnTu-Fg_bIj0UWff';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Avatar gradient colors per user index
 const AVATAR_GRADIENTS = [
@@ -27,40 +28,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== SESSION =====
-function checkSession() {
-  try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
-    if (session && session.email) {
-      const users = getUsers();
-      const user = users.find(u => u.email === session.email);
-      if (user) {
-        loginSuccess(user, false);
-        return;
-      }
+async function checkSession() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session && session.user) {
+    const u = session.user;
+    const userData = {
+      email: u.email,
+      name: u.user_metadata?.name || 'Користувач',
+      avatarIdx: u.user_metadata?.avatarIdx || 0,
+      customAvatar: u.user_metadata?.customAvatar || null
+    };
+    loginSuccess(userData, false);
+  } else {
+    setTimeout(openAuth, 500);
+    updateTopbarGuest();
+  }
+
+  // Listen for auth state changes
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      handleLogoutLocal();
+    } else if (event === 'PASSWORD_RECOVERY') {
+      switchTab('new-password');
+      document.getElementById('auth-overlay').classList.add('open');
     }
-  } catch (e) {}
-  // Not logged in — show auth modal after short delay
-  setTimeout(openAuth, 500);
-  updateTopbarGuest();
-}
-
-// ===== STORAGE =====
-function getUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY)) || [];
-  } catch { return []; }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function saveSession(user) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ email: user.email }));
-}
-
-function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+  });
 }
 
 // ===== MODAL OPEN/CLOSE =====
@@ -134,9 +126,7 @@ function switchTab(tab) {
   }, 100);
 }
 
-let pendingRegistration = null;
-
-function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
   const name     = document.getElementById('reg-name').value.trim();
   const email    = document.getElementById('reg-email').value.trim().toLowerCase();
@@ -147,195 +137,94 @@ function handleRegister(e) {
 
   clearErrors();
 
-  // Validation
-  if (name.length < 2) {
-    return showError(errEl, "Ім'я повинно містити мінімум 2 символи");
-  }
-  if (!isValidEmail(email)) {
-    return showError(errEl, 'Введи коректний email');
-  }
-  if (password.length < 6) {
-    return showError(errEl, 'Пароль повинен містити мінімум 6 символів');
-  }
-  if (password !== password2) {
-    return showError(errEl, 'Паролі не співпадають');
-  }
-
-  const users = getUsers();
-  if (users.find(u => u.email === email)) {
-    return showError(errEl, 'Акаунт з таким email вже існує');
-  }
-
-  // Create pending registration data
-  pendingRegistration = {
-    user: {
-      id: Date.now(),
-      name,
-      email,
-      password: hashPassword(password), // simple hash (not for prod)
-      createdAt: new Date().toISOString(),
-      avatarIdx: users.length % AVATAR_GRADIENTS.length,
-    },
-    users: users,
-    code: Math.floor(100000 + Math.random() * 900000).toString()
-  };
+  if (name.length < 2) return showError(errEl, "Ім'я повинно містити мінімум 2 символи");
+  if (!isValidEmail(email)) return showError(errEl, 'Введи коректний email');
+  if (password.length < 6) return showError(errEl, 'Пароль повинен містити мінімум 6 символів');
+  if (password !== password2) return showError(errEl, 'Паролі не співпадають');
 
   btn.classList.add('loading');
-  setTimeout(() => {
-    btn.classList.remove('loading');
-    
-    // Send email using EmailJS
-    emailjs.send('service_jq1o0or', 'template_gooc6ts', {
-      to_email: email,
-      name: name,
-      email: email,
-      code: pendingRegistration.code
-    }).then(function(response) {
-      if (typeof showNotification === 'function') {
-        showNotification(`📨 Код відправлено на ${email}`);
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name: name,
+        avatarIdx: Math.floor(Math.random() * AVATAR_GRADIENTS.length)
       }
-      document.getElementById('verify-email-text').innerHTML = `Ми відправили 6-значний код на<br><b>${email}</b>`;
-      document.getElementById('reg-code').value = '';
-      switchTab('verify');
-    }, function(error) {
-      const msg = error && error.text ? error.text : JSON.stringify(error);
-      showError(errEl, `Помилка EmailJS: ${msg}`);
-      console.error('EmailJS error:', error);
-    });
-  }, 700);
+    }
+  });
+  btn.classList.remove('loading');
+
+  if (error) {
+    return showError(errEl, `Помилка: ${error.message}`);
+  }
+
+  if (data.user && data.user.identities && data.user.identities.length === 0) {
+    return showError(errEl, 'Цей email вже зареєстровано.');
+  }
+
+  showSuccess('form-register', `Акаунт створено! 🎉`);
+  setTimeout(() => {
+    checkSession();
+  }, 1400);
 }
 
 function verifyRegistrationCode(e) {
-  if (e) e.preventDefault();
-  
-  const input = document.getElementById('reg-code');
-  const err = document.getElementById('reg-code-error');
-  const btn = document.getElementById('verify-submit');
-  const val = input.value.trim();
-  
-  clearErrors();
-  
-  if (val !== pendingRegistration.code) {
-    showError(err, '❌ Невірний код підтвердження. Спробуй ще раз.');
-    return;
-  }
-  
-  btn.classList.add('loading');
-  setTimeout(() => {
-    btn.classList.remove('loading');
-    
-    const { user, users } = pendingRegistration;
-    
-    // Actually save the user
-    users.push(user);
-    saveUsers(users);
-    saveSession(user);
-
-    showSuccess('form-verify', `Ласкаво просимо, ${user.name}! 🎉`);
-    
-    setTimeout(() => {
-      loginSuccess(user, true);
-    }, 1400);
-  }, 700);
+  e.preventDefault();
 }
 
-let pendingRecovery = null;
-
-function handleForgot(e) {
+async function handleForgot(e) {
   e.preventDefault();
   const email = document.getElementById('forgot-email').value.trim().toLowerCase();
   const errEl = document.getElementById('forgot-error');
   const btn = document.getElementById('forgot-submit');
 
   clearErrors();
-
-  if (!isValidEmail(email)) {
-    return showError(errEl, 'Введи коректний email');
-  }
-
-  const users = getUsers();
-  const user = users.find(u => u.email === email);
-  if (!user) {
-    return showError(errEl, 'Акаунт з таким email не знайдено');
-  }
-
-  pendingRecovery = {
-    email: email,
-    code: Math.floor(100000 + Math.random() * 900000).toString()
-  };
+  if (!isValidEmail(email)) return showError(errEl, 'Введи коректний email');
 
   btn.classList.add('loading');
+  const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  btn.classList.remove('loading');
+
+  if (error) {
+    return showError(errEl, `Помилка: ${error.message}`);
+  }
+
+  showSuccess('form-forgot', `Посилання на відновлення відправлено на пошту!`);
   setTimeout(() => {
-    btn.classList.remove('loading');
-    
-    emailjs.send('service_jq1o0or', 'template_gooc6ts', {
-      to_email: email,
-      name: user.name,
-      email: email,
-      code: pendingRecovery.code
-    }).then(function() {
-      document.getElementById('forgot-verify-text').innerHTML = `Код відправлено на<br><b>${email}</b>`;
-      document.getElementById('forgot-code').value = '';
-      switchTab('forgot-verify');
-      if (typeof showNotification === 'function') {
-        showNotification(`📨 Код відправлено на ${email}`);
-      }
-    }, function(error) {
-      showError(errEl, `Помилка EmailJS: ` + JSON.stringify(error));
-    });
-  }, 700);
+    openAuth('login');
+  }, 2500);
 }
 
 function verifyForgotCode(e) {
   e.preventDefault();
-  const code = document.getElementById('forgot-code').value.trim();
-  const err = document.getElementById('forgot-code-error');
-  const btn = document.getElementById('forgot-verify-submit');
-  
-  clearErrors();
-
-  if (code !== pendingRecovery.code) {
-    return showError(err, '❌ Невірний код підтвердження');
-  }
-
-  btn.classList.add('loading');
-  setTimeout(() => {
-    btn.classList.remove('loading');
-    switchTab('new-password');
-  }, 500);
 }
 
-function handleNewPassword(e) {
+async function handleNewPassword(e) {
   e.preventDefault();
   const newPass = document.getElementById('new-password').value;
   const errEl = document.getElementById('new-password-error');
   const btn = document.getElementById('new-password-submit');
 
   clearErrors();
-
-  if (newPass.length < 6) {
-    return showError(errEl, 'Пароль повинен містити мінімум 6 символів');
-  }
+  if (newPass.length < 6) return showError(errEl, 'Пароль повинен містити мінімум 6 символів');
 
   btn.classList.add('loading');
+  const { data, error } = await supabaseClient.auth.updateUser({ password: newPass });
+  btn.classList.remove('loading');
+
+  if (error) {
+    return showError(errEl, `Помилка: ${error.message}`);
+  }
+
+  showSuccess('form-new-password', 'Пароль успішно змінено! 🎉');
   setTimeout(() => {
-    btn.classList.remove('loading');
-    
-    const users = getUsers();
-    const idx = users.findIndex(u => u.email === pendingRecovery.email);
-    if (idx !== -1) {
-      users[idx].password = hashPassword(newPass);
-      saveUsers(users);
-      showSuccess('form-new-password', 'Пароль успішно змінено! 🎉');
-      setTimeout(() => {
-        openAuth('login');
-      }, 1500);
-    }
-  }, 600);
+    openAuth('login');
+  }, 1500);
 }
 
 // ===== LOGIN =====
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const email    = document.getElementById('login-email').value.trim().toLowerCase();
   const password = document.getElementById('login-password').value;
@@ -343,30 +232,33 @@ function handleLogin(e) {
   const btn      = document.getElementById('login-submit');
 
   clearErrors();
-
-  if (!email || !password) {
-    return showError(errEl, 'Заповни всі поля');
-  }
+  if (!email || !password) return showError(errEl, 'Заповни всі поля');
 
   btn.classList.add('loading');
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+  btn.classList.remove('loading');
+
+  if (error) {
+    showError(errEl, 'Неправильний email або пароль');
+    shakeModal();
+    return;
+  }
+
+  const u = data.user;
+  const userData = {
+    email: u.email,
+    name: u.user_metadata?.name || 'Користувач',
+    avatarIdx: u.user_metadata?.avatarIdx || 0,
+    customAvatar: u.user_metadata?.customAvatar || null
+  };
+
+  showSuccess('form-login', `З поверненням! 🎵`);
   setTimeout(() => {
-    btn.classList.remove('loading');
-
-    const users = getUsers();
-    const user = users.find(u => u.email === email && u.password === hashPassword(password));
-
-    if (!user) {
-      showError(errEl, 'Неправильний email або пароль');
-      shakeModal();
-      return;
-    }
-
-    saveSession(user);
-    showSuccess('form-login', `З поверненням, ${user.name}! 🎵`);
-    setTimeout(() => {
-      loginSuccess(user, true);
-    }, 1200);
-  }, 600);
+    loginSuccess(userData, true);
+  }, 1200);
 }
 
 // ===== LOGIN SUCCESS =====
@@ -408,9 +300,12 @@ async function loginSuccess(user, showNotif = true) {
 }
 
 // ===== LOGOUT =====
-function handleLogout() {
-  clearSession();
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  handleLogoutLocal();
+}
 
+function handleLogoutLocal() {
   // Stop music and clear queue
   if (typeof audio !== 'undefined' && audio) {
     audio.pause();
@@ -592,7 +487,7 @@ function updateProfileModalAvatar() {
   }
 }
 
-function saveProfileEdit() {
+async function saveProfileEdit() {
   if (!currentUser) return;
   
   const nameInput = document.getElementById('profile-name-input');
@@ -604,16 +499,16 @@ function saveProfileEdit() {
     return;
   }
   
-  const users = getUsers();
-  const idx = users.findIndex(u => u.email === currentUser.email);
-  if (idx >= 0) {
-    users[idx].name = newName;
-    users[idx].customAvatar = tempAvatarBase64;
-    saveUsers(users);
-    
+  const { data, error } = await supabaseClient.auth.updateUser({
+    data: {
+      name: newName,
+      customAvatar: tempAvatarBase64
+    }
+  });
+
+  if (!error) {
     currentUser.name = newName;
     currentUser.customAvatar = tempAvatarBase64;
-    
     updateTopbarLoggedIn(currentUser);
     if (typeof showNotification === 'function') {
       showNotification(`✅ Профіль оновлено`);
