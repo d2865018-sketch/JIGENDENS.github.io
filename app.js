@@ -672,7 +672,7 @@ function trackRowHTML(track, displayNum, ctx) {
   const globalIdx = getTrackGlobalIndex(track);
   const playing = currentTrackIndex === globalIdx && isPlaying;
   const liked = likedIds.has(track.id);
-  const isUserTrack = userTracks.some(t => t.id === track.id);
+  const isUserTrack = userTracks.some(t => String(t.id) === String(track.id));
   return `
     <div class="track-row ${currentTrackIndex === globalIdx ? 'playing' : ''}" 
          onclick="playTrackByGlobalIndex(${globalIdx})" 
@@ -731,7 +731,7 @@ function getAllTracks() {
 }
 
 function getTrackGlobalIndex(track) {
-  return getAllTracks().findIndex(t => t.id === track.id);
+  return getAllTracks().findIndex(t => String(t.id) === String(track.id));
 }
 
 function getTrackAtIndex(idx) {
@@ -1007,7 +1007,7 @@ function toggleLike() {
 
 function toggleLikeById(id) {
   const allTracks = getAllTracks();
-  const track = allTracks.find(t => t.id === id);
+  const track = allTracks.find(t => String(t.id) === String(id));
   if (!track) return;
   if (likedIds.has(id)) {
     likedIds.delete(id);
@@ -1101,7 +1101,7 @@ async function renderCommunityList() {
   container.innerHTML = '';
   publicTracks.forEach((track) => {
     // We add them to our global tracks array if they are not there, so we can play them
-    const existingIdx = tracks.findIndex(t => t.id === track.id);
+    const existingIdx = tracks.findIndex(t => String(t.id) === String(track.id));
     let finalIdx = existingIdx;
     if (existingIdx === -1) {
       tracks.push(track);
@@ -1244,14 +1244,14 @@ async function deleteUserTrack(trackId) {
     }
   }
 
-  const track = userTracks.find(t => t.id === trackId);
+  const track = userTracks.find(t => String(t.id) === String(trackId));
   const name  = track ? track.title : 'Трек';
 
   // Revoke blob URL
   if (track && track.src) URL.revokeObjectURL(track.src);
 
   // Remove from array
-  userTracks = userTracks.filter(t => t.id !== trackId);
+  userTracks = userTracks.filter(t => String(t.id) !== String(trackId));
 
   // Remove from likes
   likedIds.delete(trackId);
@@ -1384,7 +1384,7 @@ function trackWord(n) {
 function getPlaylistCovers(pl, max = 4) {
   const all = getAllTracks();
   return pl.trackIds
-    .map(id => all.find(t => t.id === id))
+    .map(id => all.find(t => String(t.id) === String(id)))
     .filter(Boolean)
     .slice(0, max)
     .map(t => t.cover);
@@ -1472,7 +1472,7 @@ function renderPlaylistTracks(pl) {
   const el = document.getElementById('playlist-tracks-list');
   const all = getAllTracks();
   const tracksInPl = pl.trackIds
-    .map(id => all.find(t => t.id === id))
+    .map(id => all.find(t => String(t.id) === String(id)))
     .filter(Boolean);
 
   if (tracksInPl.length === 0) {
@@ -1535,7 +1535,7 @@ function playPlaylistAll() {
   const pl = playlists.find(p => p.id === currentPlaylistId);
   if (!pl || pl.trackIds.length === 0) return;
   const all = getAllTracks();
-  const first = all.find(t => t.id === pl.trackIds[0]);
+  const first = all.find(t => String(t.id) === String(pl.trackIds[0]));
   if (!first) return;
   playTrackByGlobalIndex(getTrackGlobalIndex(first));
 }
@@ -1741,7 +1741,7 @@ function addTrackToPlaylist(plId) {
   renderAddToPlaylistList();
   renderSidebarPlaylists();
   const all = getAllTracks();
-  const track = all.find(t => t.id === addToPlaylistTrackId);
+  const track = all.find(t => String(t.id) === String(addToPlaylistTrackId));
   showNotification(`➕ "${track ? track.title : 'Трек'}" → ${pl.name}`);
   setTimeout(closeAddToPlaylist, 800);
 }
@@ -2223,7 +2223,7 @@ async function deleteUserTrack(trackId) {
   const email = user ? user.email : null;
   
   // Find the track
-  const track = userTracks.find(t => t.id === trackId);
+  const track = userTracks.find(t => String(t.id) === String(trackId));
   if (!track) return;
   
   // Delete from storage
@@ -2237,7 +2237,7 @@ async function deleteUserTrack(trackId) {
   }
   
   // Remove from state
-  userTracks = userTracks.filter(t => t.id !== trackId);
+  userTracks = userTracks.filter(t => String(t.id) !== String(trackId));
   likedIds.delete(trackId);
   if (typeof saveLiked === 'function') saveLiked(email);
   
