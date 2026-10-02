@@ -119,7 +119,7 @@ async function swLoadPublicTracks() {
   try {
     const { data, error } = await supabaseClient
       .from('tracks')
-      .select('*, auth_users:user_id(raw_user_meta_data)')
+      .select('*')
       .eq('is_public', true)
       .order('created_at', { ascending: false });
 
@@ -127,15 +127,11 @@ async function swLoadPublicTracks() {
 
     return data.map(d => {
       publicUrlMap[d.id] = d.file_url;
-      let authorName = 'Невідомий користувач';
-      if (d.auth_users && d.auth_users.raw_user_meta_data && d.auth_users.raw_user_meta_data.name) {
-         authorName = d.auth_users.raw_user_meta_data.name;
-      }
 
       return {
         id: d.id,
         title: d.title,
-        artist: d.artist || authorName, // Use user name if artist not set properly, or just authorName
+        artist: d.artist || 'Невідомий виконавець',
         genre: 'Спільнота',
         cover: d.cover_url || null,
         src: d.file_url,
