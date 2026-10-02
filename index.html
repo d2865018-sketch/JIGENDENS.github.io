@@ -423,22 +423,6 @@
               <input type="text" id="mp3tag-genre" placeholder="Введи жанр або альбом..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
             </div>
             
-            <div class="ext-save-field" style="margin-bottom:15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-              <div>
-                <label style="margin:0; font-weight: 500;">Публічний трек 🌍</label>
-                <p style="margin: 4px 0 0; font-size: 11px; color: var(--text-muted);">Інші користувачі зможуть слухати цей трек</p>
-              </div>
-              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                <input type="checkbox" id="mp3tag-public" style="opacity: 0; width: 0; height: 0;">
-                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-hover); transition: .4s; border-radius: 24px;"></span>
-              </label>
-            </div>
-            
-            <style>
-              #mp3tag-public:checked + .slider { background-color: var(--primary); }
-              .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-              #mp3tag-public:checked + .slider:before { transform: translateX(20px); }
-            </style>
 
             <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
               <button class="upload-btn" style="flex:1" onclick="saveMp3Tag()">
@@ -448,6 +432,25 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- COMMUNITY SECTION -->
+      <section class="section" id="section-community">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h1>🌍 Спільнота</h1>
+            <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
+          </div>
+          <button class="upload-btn" onclick="openPublishFromLibraryModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Опублікувати свої
+          </button>
+        </div>
+        <div class="tracks-list-full" id="community-list"></div>
       </section>
 
       <!-- SEARCH RESULTS -->
@@ -1079,6 +1082,27 @@
       <div class="accsw-footer" style="justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border);">
         <button class="playlist-modal-cancel" onclick="closeProfileEdit()" style="margin-right: 12px;">Скасувати</button>
         <button class="playlist-modal-save" onclick="saveProfileEdit()">Зберегти</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Publish from Library Modal -->
+  <div class="accsw-overlay" id="publish-library-overlay" onclick="closePublishLibraryModal()">
+    <div class="accsw-modal" onclick="event.stopPropagation()">
+      <div class="accsw-header">
+        <h3>Опублікувати з Бібліотеки</h3>
+        <button class="accsw-close" onclick="closePublishLibraryModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="profile-edit-body" style="padding: 20px; max-height: 400px; overflow-y: auto;">
+        <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">Обери трек зі своєї бібліотеки, щоб опублікувати його для всіх у Спільноті.</p>
+        <div id="publish-library-list" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- JS will populate -->
+        </div>
+      </div>
+      <div class="accsw-footer" style="justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border);">
+        <button class="playlist-modal-cancel" onclick="closePublishLibraryModal()">Скасувати</button>
       </div>
     </div>
   </div>

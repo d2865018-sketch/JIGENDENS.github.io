@@ -432,9 +432,6 @@ function selectMp3TagTrack(id) {
   document.getElementById('mp3tag-artist').value = track.artist || '';
   document.getElementById('mp3tag-genre').value = track.genre || '';
   
-  const publicToggle = document.getElementById('mp3tag-public');
-  if (publicToggle) publicToggle.checked = track.is_public || false;
-  
   renderMp3TagCoverPreview();
   renderMp3TagList(); // refresh active state
 }
@@ -469,9 +466,6 @@ function saveMp3Tag() {
   track.artist = document.getElementById('mp3tag-artist').value || 'Невідомий виконавець';
   track.genre = document.getElementById('mp3tag-genre').value || track.genre;
   if (tempMp3TagCover) track.cover = tempMp3TagCover;
-  
-  const publicToggle = document.getElementById('mp3tag-public');
-  if (publicToggle) track.is_public = publicToggle.checked;
   
   swSaveTracksMeta(currentUser.email, userTracks);
   showNotification('💾 Теги успішно збережено');
@@ -2398,3 +2392,68 @@ async function publishMedia() {
     btn.disabled = false;
   }
 }
+
+// ===== PUBLISH FROM LIBRARY =====
+function openPublishFromLibraryModal() {
+  const overlay = document.getElementById('publish-library-overlay');
+  const listContainer = document.getElementById('publish-library-list');
+  if (!overlay || !listContainer) return;
+
+  // Filter out tracks that are already public or don't have proper source
+  const availableTracks = userTracks.filter(t => !t.is_public && t.src);
+
+  if (availableTracks.length === 0) {
+    listContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Немає треків для публікації. Усі твої треки вже публічні або бібліотека порожня.</div>';
+  } else {
+    listContainer.innerHTML = availableTracks.map(t => `
+      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+          <img src="${t.cover}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
+          <div style="overflow: hidden;">
+            <div style="font-weight: 500; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${t.title}</div>
+            <div style="font-size: 12px; color: var(--text-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${t.artist}</div>
+          </div>
+        </div>
+        <button onclick="publishExistingTrack('${t.id}')" style="background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 13px; cursor: pointer;">Опублікувати</button>
+      </div>
+    `).join('');
+  }
+
+  overlay.classList.add('show');
+}
+
+function closePublishLibraryModal() {
+  const overlay = document.getElementById('publish-library-overlay');
+  if (overlay) overlay.classList.remove('show');
+}
+
+async function publishExistingTrack(trackId) {
+  const track = userTracks.find(t => String(t.id) === String(trackId));
+  if (!track) return;
+  
+  const email = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.email : null;
+  if (!email) {
+    if (typeof showNotification === 'function') showNotification('❌ Увійдіть в акаунт, щоб опублікувати!');
+    return;
+  }
+
+  track.is_public = true;
+  
+  if (typeof swSaveTracksMeta === 'function') {
+    const success = await swSaveTracksMeta(email, userTracks);
+    if (success) {
+      if (typeof showNotification === 'function') showNotification('✅ Трек успішно опубліковано у Спільноті!');
+      closePublishLibraryModal();
+      if (typeof renderCommunityList === 'function') renderCommunityList();
+    } else {
+      track.is_public = false; // rollback
+      if (typeof showNotification === 'function') showNotification('❌ Помилка при публікації.');
+    }
+  } else {
+    // Local mode fallback
+    if (typeof showNotification === 'function') showNotification('✅ Трек опубліковано (локально)!');
+    closePublishLibraryModal();
+    if (typeof renderCommunityList === 'function') renderCommunityList();
+  }
+}
+
