@@ -19,7 +19,10 @@ async function swSaveAudio(trackId, blob) {
       .from('music')
       .upload(filePath, blob, { upsert: true });
       
-    if (error) throw error;
+    if (error) {
+      alert("Помилка завантаження файлу в Storage: " + error.message);
+      throw error;
+    }
 
     // Get public URL
     const { data: publicUrlData } = supabaseClient.storage.from('music').getPublicUrl(filePath);
@@ -74,6 +77,11 @@ async function swSaveTracksMeta(email, tracks) {
           cover_url: t.cover,
           is_public: !!t.is_public
         }, { onConflict: 'id' });
+        
+      if (error) {
+        alert("Помилка бази даних при збереженні: " + error.message);
+        console.error("Upsert error:", error);
+      }
     }
   } catch(e) {
     console.error(e);
@@ -92,7 +100,10 @@ async function swLoadTracks(email) {
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      alert("Помилка завантаження треків: " + error.message);
+      throw error;
+    }
 
     return data.map(d => {
       publicUrlMap[d.id] = d.file_url;
@@ -123,7 +134,10 @@ async function swLoadPublicTracks() {
       .eq('is_public', true)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      alert("Помилка завантаження Спільноти: " + error.message);
+      throw error;
+    }
 
     return data.map(d => {
       publicUrlMap[d.id] = d.file_url;
