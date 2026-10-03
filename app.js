@@ -1082,7 +1082,7 @@ function showSection(name, el) {
   if (name === 'explore') renderExploreList(currentGenreFilter);
   if (name === 'extractor') renderExtSavedList();
   if (name === 'mp3tag') renderMp3TagList();
-  if (name === 'community') renderCommunityList();
+  if (name === 'community') { renderCommunityList(); renderCommunityPlaylists(); }
 }
 
 async function renderCommunityList() {
@@ -1464,6 +1464,7 @@ function openPlaylistView(id) {
 
   // Render tracks
   renderPlaylistTracks(pl);
+  updatePublishButtons(pl);
 
   // Switch section
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1565,6 +1566,7 @@ function deleteCurrentPlaylist() {
   const pl = playlists.find(p => p.id === currentPlaylistId);
   if (!pl) return;
   if (!confirm(`Видалити плейлист "${pl.name}"?`)) return;
+  if (pl.published && typeof swUnpublishPlaylist === 'function') swUnpublishPlaylist(pl.id);
   playlists = playlists.filter(p => p.id !== currentPlaylistId);
   currentPlaylistId = null;
   savePlaylists();
@@ -2279,3 +2281,132 @@ async function deleteUserTrack(trackId) {
 
 // Init extractor drag-drop on DOMContentLoaded is called in main init
 
+
+
+// =============================================
+//  ПУБЛІЧНІ ПЛЕЙЛИСТИ (Спільнота)
+// =============================================
+let communityPlaylists = [];
+let openCommunityPlaylistId = null;
+
+function updatePublishButtons(pl) {
+  const pub = document.getElementById('pv-publish-label');
+  const unpub = document.getElementById('pv-unpublish-btn');
+  if (!pub || !unpub) return;
+  pub.textContent = pl && pl.published ? 'Оновити публікацію' : 'Опублікувати';
+  unpub.style.display = pl && pl.published ? 'flex' : 'none';
+}
+
+async function publishCurrentPlaylist() {
+  const pl = playlists.find(p => p.id === currentPlaylistId);
+  if (!pl) return;
+  if (typeof currentUser === 'undefined' || !currentUser) {
+    showNotification('⚠️ Увійди в акаунт, щоб публікувати плейлисти');
+    return;
+  }
+  if (pl.trackIds.length === 0) {
+    showNotification('⚠️ Плейлист порожній — додай треки');
+    return;
+  }
+
+  const btn = document.getElementById('pv-publish-btn');
+  if (btn) btn.disabled = true;
+  showNotification('⏳ Публікуємо плейлист...');
+
+  const res = await swPublishPlaylist(pl, getAllTracks(), currentUser.name);
+
+  if (btn) btn.disabled = false;
+  if (!res.ok) return;
+
+  pl.published = true;
+  savePlaylists();
+  updatePublishButtons(pl);
+  let msg = `🌍 Плейлист опубліковано (${res.count} ${trackWord(res.count)})`;
+  if (res.skipped) msg += `, без аудіофайлу пропущено: ${res.skipped}`;
+  showNotification(msg);
+}
+
+async function unpublishCurrentPlaylist() {
+  const pl = playlists.find(p => p.id === currentPlaylistId);
+  if (!pl) return;
+  const ok = await swUnpublishPlaylist(pl.id);
+  if (!ok) return;
+  pl.published = false;
+  savePlaylists();
+  updatePublishButtons(pl);
+  showNotification('Плейлист знято з публікації');
+}
+
+function switchCommunityTab(tab) {
+  const tracksEl = document.getElementById('community-list');
+  const plEl = document.getElementById('community-playlists-list');
+  if (!tracksEl || !plEl) return;
+  tracksEl.style.display = tab === 'tracks' ? '' : 'none';
+  plEl.style.display = tab === 'playlists' ? '' : 'none';
+  document.getElementById('comm-tab-tracks').classList.toggle('active', tab === 'tracks');
+  document.getElementById('comm-tab-playlists').classList.toggle('active', tab === 'playlists');
+}
+
+async function renderCommunityPlaylists() {
+  const el = document.getElementById('community-playlists-list');
+  if (!el) return;
+  el.innerHTML = '<div class="empty-state" style="padding:40px; color:var(--text-muted);">Завантаження...</div>';
+
+  communityPlaylists = (typeof swLoadPublicPlaylists === 'function') ? await swLoadPublicPlaylists() : [];
+
+  if (communityPlaylists.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <span>📂</span>
+        <p>Поки що немає публічних плейлистів. Опублікуй свій!</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = '<div class="comm-pl-grid">' + communityPlaylists.map(p => {
+    const list = Array.isArray(p.tracks) ? p.tracks : [];
+    const cover = p.cover_url || (list[0] && list[0].cover) || null;
+    const coverHTML = cover
+      ? `<img src="${cover}" alt="" />`
+      : `<div style="width:100%;height:100%;background:${p.gradient || 'var(--bg-elevated)'}"></div>`;
+    return `
+      <div class="comm-pl-card" onclick="openCommunityPlaylist('${p.id}')">
+        <div class="comm-pl-cover">${coverHTML}</div>
+        <div class="comm-pl-name">${escapeHtml(p.name)}</div>
+        <div class="comm-pl-owner">👤 ${escapeHtml(p.owner_name || 'Користувач')}</div>
+        <div class="comm-pl-count">${list.length} ${trackWord(list.length)}</div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+function openCommunityPlaylist(id) {
+  const p = communityPlaylists.find(x => String(x.id) === String(id));
+  if (!p) return;
+  openCommunityPlaylistId = p.id;
+  const list = Array.isArray(p.tracks) ? p.tracks : [];
+
+  // Додаємо треки в глобальний список, щоб їх можна було відтворити
+  const resolved = list.map(tr => {
+    const existing = getAllTracks().find(t => String(t.id) === String(tr.id));
+    if (existing) return existing;
+    const t = { ...tr, genre: 'Спільнота', liked: false, plays: '0' };
+    tracks.push(t);
+    return t;
+  });
+
+  document.getElementById('cp-name').textContent = p.name;
+  document.getElementById('cp-owner').textContent =
+    `Опублікував: ${p.owner_name || 'Користувач'} · ${list.length} ${trackWord(list.length)}`;
+  document.getElementById('cp-desc').textContent = p.description || '';
+  document.getElementById('cp-tracks-list').innerHTML =
+    resolved.map((t, i) => trackRowHTML(t, i, 'community')).join('');
+
+  showSection('community-playlist', document.getElementById('nav-community'));
+}
+
+function playCommunityPlaylist() {
+  const p = communityPlaylists.find(x => String(x.id) === String(openCommunityPlaylistId));
+  if (!p || !p.tracks || p.tracks.length === 0) return;
+  const first = getAllTracks().find(t => String(t.id) === String(p.tracks[0].id));
+  if (first) playTrackByGlobalIndex(getTrackGlobalIndex(first));
+}

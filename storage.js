@@ -192,3 +192,107 @@ async function swDeleteTrack(email, trackId) {
     console.error('[Storage] swDeleteTrack failed:', e);
   }
 }
+
+
+/* ========================================
+   Публічні плейлисти (розділ "Спільнота")
+   ======================================== */
+
+// Обкладинка треку для знімка плейлиста: лише http/data, і не завелика
+function swSnapshotCover(cover, id) {
+  if (cover && cover.startsWith('data:') && cover.length > 60000) cover = null;
+  return swSafeCover(cover, id);
+}
+
+/**
+ * Публікує (або оновлює) плейлист у Спільноті.
+ * Зберігається копія треків: назва, виконавець, обкладинка, посилання на файл.
+ * Повертає { ok, count, skipped }.
+ */
+async function swPublishPlaylist(pl, allTracks, ownerName) {
+  const session = await swGetSession();
+  if (!session) { swNotify('⚠️ Увійди в акаунт, щоб публікувати'); return { ok: false }; }
+
+  const snapshot = [];
+  let skipped = 0;
+  for (const id of pl.trackIds) {
+    const t = allTracks.find(x => String(x.id) === String(id));
+    if (!t) { skipped++; continue; }
+    let src = t.src || '';
+    if (src.startsWith('blob:')) src = publicUrlMap[t.id] || '';
+    if (!/^https?:/i.test(src)) { skipped++; continue; }   // без файлу — слухати неможливо
+    snapshot.push({
+      id: String(t.id),
+      title: t.title,
+      artist: t.artist,
+      cover: swSnapshotCover(t.cover, t.id),
+      src,
+      duration: t.duration || 0
+    });
+  }
+
+  if (snapshot.length === 0) {
+    swNotify('⚠️ У плейлисті немає треків з аудіофайлом');
+    return { ok: false };
+  }
+
+  let cover = pl.customCover || null;
+  if (cover && cover.startsWith('data:') && cover.length > 200000) cover = null;
+
+  try {
+    const { error } = await supabaseClient.from('community_playlists').upsert({
+      id: `${session.user.id}_${pl.id}`,
+      user_id: session.user.id,
+      owner_name: ownerName || 'Користувач',
+      name: pl.name,
+      description: pl.desc || '',
+      gradient: pl.gradient || null,
+      cover_url: cover,
+      tracks: snapshot,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+
+    if (error) {
+      console.error('[Playlist] publish error:', error);
+      swNotify('❌ Не вдалося опублікувати: ' + error.message);
+      return { ok: false };
+    }
+    return { ok: true, count: snapshot.length, skipped };
+  } catch (e) {
+    console.error('[Playlist] publish failed:', e);
+    swNotify('❌ Немає зв’язку з сервером');
+    return { ok: false };
+  }
+}
+
+async function swUnpublishPlaylist(plId) {
+  const session = await swGetSession();
+  if (!session) return false;
+  try {
+    const { error } = await supabaseClient
+      .from('community_playlists')
+      .delete()
+      .eq('id', `${session.user.id}_${plId}`);
+    if (error) { swNotify('❌ Не вдалося зняти з публікації: ' + error.message); return false; }
+    return true;
+  } catch (e) {
+    console.error('[Playlist] unpublish failed:', e);
+    return false;
+  }
+}
+
+async function swLoadPublicPlaylists() {
+  if (typeof supabaseClient === 'undefined') return [];
+  try {
+    const { data, error } = await supabaseClient
+      .from('community_playlists')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(60);
+    if (error) { swNotify('❌ Помилка завантаження плейлистів: ' + error.message); return []; }
+    return data || [];
+  } catch (e) {
+    console.error('[Playlist] load failed:', e);
+    return [];
+  }
+}
