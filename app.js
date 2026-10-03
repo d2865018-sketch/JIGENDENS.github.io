@@ -432,6 +432,9 @@ function selectMp3TagTrack(id) {
   document.getElementById('mp3tag-artist').value = track.artist || '';
   document.getElementById('mp3tag-genre').value = track.genre || '';
   
+  const publicToggle = document.getElementById('mp3tag-public');
+  if (publicToggle) publicToggle.checked = track.is_public || false;
+  
   renderMp3TagCoverPreview();
   renderMp3TagList(); // refresh active state
 }
@@ -456,7 +459,7 @@ function renderMp3TagCoverPreview() {
   `;
 }
 
-function saveMp3Tag() {
+async function saveMp3Tag() {
   if (!mp3tagSelectedTrackId) return;
   
   const track = userTracks.find(t => String(t.id) === String(mp3tagSelectedTrackId));
@@ -467,8 +470,11 @@ function saveMp3Tag() {
   track.genre = document.getElementById('mp3tag-genre').value || track.genre;
   if (tempMp3TagCover) track.cover = tempMp3TagCover;
   
-  swSaveTracksMeta(currentUser.email, userTracks);
-  showNotification('💾 Теги успішно збережено');
+  const publicToggle = document.getElementById('mp3tag-public');
+  if (publicToggle) track.is_public = publicToggle.checked;
+  
+  const saved = await swSaveTracksMeta(currentUser.email, userTracks);
+  if (saved) showNotification(track.is_public ? '🌍 Збережено — трек публічний' : '💾 Теги успішно збережено');
   renderMp3TagList();
   renderLibraryList();
   renderExtSavedList();
@@ -1093,13 +1099,6 @@ async function renderCommunityList() {
   }
 
   container.innerHTML = '';
-  // Set container styles to look like a feed
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.gap = '30px';
-  container.style.maxWidth = '600px';
-  container.style.margin = '0 auto';
-  
   publicTracks.forEach((track) => {
     // We add them to our global tracks array if they are not there, so we can play them
     const existingIdx = tracks.findIndex(t => String(t.id) === String(track.id));
@@ -1109,70 +1108,7 @@ async function renderCommunityList() {
       finalIdx = tracks.length - 1;
     }
     
-    // Create Instagram-like post element
-    const postEl = document.createElement('div');
-    postEl.style.backgroundColor = 'var(--bg-card)';
-    postEl.style.borderRadius = '12px';
-    postEl.style.border = '1px solid var(--border)';
-    postEl.style.overflow = 'hidden';
-    postEl.style.padding = '16px';
-    
-    // Post Header (Avatar + Name)
-    const headerHTML = `
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-        <img src="${track.cover || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border);" />
-        <div>
-          <div style="font-weight: 600; font-size: 15px;">${escapeHtml(track.artist || 'Користувач')}</div>
-        </div>
-      </div>
-    `;
-    
-    // Media Content
-    let mediaHTML = '';
-    const src = track.src || '';
-    const genre = track.genre || 'audio';
-    
-    if (genre === 'image' || src.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-      mediaHTML = `<img src="${src}" style="width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; background: #000;" onerror="this.src='https://via.placeholder.com/400x400?text=Помилка+завантаження'" />`;
-    } else if (genre === 'video' || src.match(/\.(mp4|webm|ogg)$/i)) {
-      mediaHTML = `<video src="${src}" controls style="width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; background: #000;"></video>`;
-    } else {
-      // Audio or YouTube link (fallback to simple link if not playable directly)
-      if (src.includes('youtube.com') || src.includes('youtu.be')) {
-        mediaHTML = `<a href="${src}" target="_blank" style="display: block; padding: 16px; background: var(--bg-elevated); border-radius: 8px; color: #ff6b35; text-decoration: none; text-align: center; font-weight: 600;">📺 Відкрити відео (YouTube)</a>`;
-      } else {
-        // Standard audio player
-        mediaHTML = `
-          <div style="background: var(--bg-elevated); padding: 16px; border-radius: 8px; display: flex; align-items: center; gap: 16px;">
-            <button onclick="playTrackByGlobalIndex(${finalIdx})" style="background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white;">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M8 5v14l11-7z"></path></svg>
-            </button>
-            <div style="flex: 1; overflow: hidden;">
-              <div style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${escapeHtml(track.title)}</div>
-              <div style="font-size: 13px; color: var(--text-muted);">Аудіотрек</div>
-            </div>
-          </div>
-        `;
-      }
-    }
-    
-    // Post Footer (Description and Actions)
-    const footerHTML = `
-      <div style="margin-top: 16px;">
-        <div style="display: flex; gap: 16px; margin-bottom: 12px;">
-          <button style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0; display: flex; align-items: center; gap: 6px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-          </button>
-        </div>
-        <div style="font-size: 14px;">
-          <span style="font-weight: 600;">${escapeHtml(track.artist || 'Користувач')}</span>
-          <span>${escapeHtml(track.title || '')}</span>
-        </div>
-      </div>
-    `;
-    
-    postEl.innerHTML = headerHTML + mediaHTML + footerHTML;
-    container.appendChild(postEl);
+    container.appendChild(createTrackItem(tracks[finalIdx], finalIdx, 'community-list'));
   });
 }
 
@@ -1275,12 +1211,15 @@ async function handleFileUpload(input) {
     });
 
     // Save audio blob to IndexedDB for persistence
+    let uploadOk = true;
     if (typeof swSaveAudio === 'function') {
-      await swSaveAudio(trackId, file);
+      const uploadedUrl = await swSaveAudio(trackId, file);
+      uploadOk = !!uploadedUrl;
+      if (uploadedUrl) { URL.revokeObjectURL(track.src); track.src = uploadedUrl; }
     }
 
     userTracks.push(track);
-    showNotification(`🎵 "​${name}​" збережено!`);
+    if (uploadOk) showNotification(`🎵 "​${name}​" збережено!`);
   }
 
   // Persist all metadata after all files are processed
@@ -2335,155 +2274,4 @@ async function deleteUserTrack(trackId) {
 }
 
 // Init extractor drag-drop on DOMContentLoaded is called in main init
-
-// ===== PUBLISH MEDIA =====
-async function publishMedia() {
-  const urlInput = document.getElementById('publish-url');
-  const titleInput = document.getElementById('publish-title').value.trim();
-  const artistInput = document.getElementById('publish-artist').value.trim();
-  const typeSelect = document.getElementById('publish-type').value;
-  const btn = document.querySelector('.publish-btn');
-
-  const mediaUrl = urlInput ? urlInput.value.trim() : '';
-
-  if (!mediaUrl) {
-    if (typeof showNotification === 'function') showNotification('❌ Введіть посилання на медіа!');
-    return;
-  }
-  if (!titleInput) {
-    if (typeof showNotification === 'function') showNotification('❌ Введіть текст поста!');
-    return;
-  }
-
-  const trackId = 'pub_' + Date.now();
-
-  btn.innerText = 'Публікація...';
-  btn.disabled = true;
-
-  try {
-    const email = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.email : 'guest';
-    const user = typeof currentUser !== 'undefined' ? currentUser : null;
-    
-    if (!user) {
-      if (typeof showNotification === 'function') showNotification('❌ Увійдіть в акаунт, щоб опублікувати!');
-      btn.innerText = 'Опублікувати';
-      btn.disabled = false;
-      return;
-    }
-
-    // Prepare track object. 
-    // We store the media type in the "genre" field so we can render it differently in Community.
-    const newTrack = {
-      id: trackId,
-      title: titleInput,
-      artist: artistInput || user.name,
-      src: mediaUrl,
-      cover: user.customAvatar || COVERS[Math.floor(Math.random() * COVERS.length)], // use author avatar as cover for now
-      genre: typeSelect, // 'audio', 'video', or 'image'
-      is_public: true
-    };
-
-    // Save to DB
-    let success = false;
-    if (typeof swSaveTracksMeta === 'function') {
-      success = await swSaveTracksMeta(email, [newTrack]);
-    } else {
-      // Local fallback
-      userTracks.unshift(newTrack);
-      success = true;
-    }
-
-    if (success) {
-      if (typeof showNotification === 'function') showNotification('✅ Успішно опубліковано!');
-      
-      // Clear form
-      if (urlInput) urlInput.value = '';
-      document.getElementById('publish-title').value = '';
-      document.getElementById('publish-artist').value = '';
-      
-      // Go to community section to see it
-      if (typeof showSection === 'function') {
-        showSection('community', document.getElementById('nav-community'));
-      }
-      if (typeof renderCommunityList === 'function') {
-        renderCommunityList();
-      }
-    } else {
-      throw new Error('Помилка збереження метаданих. Можливо, підключення до БД розірвано.');
-    }
-
-  } catch (err) {
-    if (err.message !== 'SILENT') {
-      console.error(err);
-      if (typeof showNotification === 'function') showNotification('❌ ' + (err.message || 'Помилка'));
-    }
-  } finally {
-    btn.innerText = 'Опублікувати';
-    btn.disabled = false;
-  }
-}
-
-// ===== PUBLISH FROM LIBRARY =====
-function openPublishFromLibraryModal() {
-  const overlay = document.getElementById('publish-library-overlay');
-  const listContainer = document.getElementById('publish-library-list');
-  if (!overlay || !listContainer) return;
-
-  // Filter out tracks that are already public or don't have proper source
-  const availableTracks = userTracks.filter(t => !t.is_public && t.src);
-
-  if (availableTracks.length === 0) {
-    listContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Немає треків для публікації. Усі твої треки вже публічні або бібліотека порожня.</div>';
-  } else {
-    listContainer.innerHTML = availableTracks.map(t => `
-      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
-          <img src="${t.cover}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
-          <div style="overflow: hidden;">
-            <div style="font-weight: 500; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${t.title}</div>
-            <div style="font-size: 12px; color: var(--text-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${t.artist}</div>
-          </div>
-        </div>
-        <button onclick="publishExistingTrack('${t.id}')" style="background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 13px; cursor: pointer;">Опублікувати</button>
-      </div>
-    `).join('');
-  }
-
-  overlay.classList.add('show');
-}
-
-function closePublishLibraryModal() {
-  const overlay = document.getElementById('publish-library-overlay');
-  if (overlay) overlay.classList.remove('show');
-}
-
-async function publishExistingTrack(trackId) {
-  const track = userTracks.find(t => String(t.id) === String(trackId));
-  if (!track) return;
-  
-  const email = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.email : null;
-  if (!email) {
-    if (typeof showNotification === 'function') showNotification('❌ Увійдіть в акаунт, щоб опублікувати!');
-    return;
-  }
-
-  track.is_public = true;
-  
-  if (typeof swSaveTracksMeta === 'function') {
-    const success = await swSaveTracksMeta(email, userTracks);
-    if (success) {
-      if (typeof showNotification === 'function') showNotification('✅ Трек успішно опубліковано у Спільноті!');
-      closePublishLibraryModal();
-      if (typeof renderCommunityList === 'function') renderCommunityList();
-    } else {
-      track.is_public = false; // rollback
-      if (typeof showNotification === 'function') showNotification('❌ Помилка при публікації.');
-    }
-  } else {
-    // Local mode fallback
-    if (typeof showNotification === 'function') showNotification('✅ Трек опубліковано (локально)!');
-    closePublishLibraryModal();
-    if (typeof renderCommunityList === 'function') renderCommunityList();
-  }
-}
 

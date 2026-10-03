@@ -26,10 +26,7 @@ async function swGetSession() {
  */
 async function swSaveAudio(trackId, blob) {
   const session = await swGetSession();
-  if (!session) {
-    swNotify('❌ Помилка: Не авторизовано у Supabase');
-    return null;
-  }
+  if (!session) return null;
 
   try {
     const ext = blob.name
@@ -72,10 +69,11 @@ async function swSaveTracksMeta(email, tracks) {
   if (!session) return false;
 
   const rows = [];
+  let skipped = 0;
   for (const t of tracks) {
     let fileUrl = t.src || '';
     if (fileUrl.startsWith('blob:')) fileUrl = publicUrlMap[t.id] || '';
-    if (!fileUrl) continue;
+    if (!fileUrl) { skipped++; continue; }
 
     rows.push({
       id: String(t.id),
@@ -87,7 +85,10 @@ async function swSaveTracksMeta(email, tracks) {
       is_public: !!t.is_public
     });
   }
-  if (rows.length === 0) return true;
+  if (rows.length === 0) {
+    if (skipped > 0) swNotify('⚠️ Файл ще не завантажений у хмару — перевір, що ти увійшов в акаунт');
+    return skipped === 0;
+  }
 
   try {
     const { error } = await supabaseClient
@@ -133,21 +134,13 @@ async function swLoadTracks(email) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      if (error.message && error.message.includes('Failed to fetch')) {
-        swNotify('❌ Сервер недоступний (можливо, проект Supabase призупинено або немає інтернету)');
-      } else {
-        swNotify('❌ Помилка завантаження треків: ' + error.message);
-      }
+      swNotify('❌ Помилка завантаження треків: ' + error.message);
       return [];
     }
     return data.map(d => swMapRow(d, 'Завантажене', false)).filter(t => t.src);
   } catch (e) {
     console.error('[Storage] swLoadTracks failed:', e);
-    if (e.message && e.message.includes('Failed to fetch')) {
-      swNotify('❌ Сервер недоступний (можливо, проект Supabase призупинено або немає інтернету)');
-    } else {
-      swNotify('❌ Немає зв’язку з сервером (Supabase)');
-    }
+    swNotify('❌ Немає зв’язку з сервером (Supabase)');
     return [];
   }
 }
