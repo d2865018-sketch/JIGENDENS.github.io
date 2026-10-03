@@ -1098,18 +1098,16 @@ async function renderCommunityList() {
     return;
   }
 
-  container.innerHTML = '';
+  // Додаємо чужі публічні треки в глобальний список, щоб їх можна було грати
   publicTracks.forEach((track) => {
-    // We add them to our global tracks array if they are not there, so we can play them
-    const existingIdx = tracks.findIndex(t => String(t.id) === String(track.id));
-    let finalIdx = existingIdx;
-    if (existingIdx === -1) {
-      tracks.push(track);
-      finalIdx = tracks.length - 1;
-    }
-    
-    container.appendChild(createTrackItem(tracks[finalIdx], finalIdx, 'community-list'));
+    const isMine = userTracks.some(t => String(t.id) === String(track.id));
+    const inGlobal = tracks.some(t => String(t.id) === String(track.id));
+    if (!isMine && !inGlobal) tracks.push(track);
   });
+
+  container.innerHTML = publicTracks
+    .map((track, i) => trackRowHTML(track, i, 'community'))
+    .join('');
 }
 
 function toggleSidebar() {
