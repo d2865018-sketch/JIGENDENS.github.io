@@ -26,7 +26,10 @@ async function swGetSession() {
  */
 async function swSaveAudio(trackId, blob) {
   const session = await swGetSession();
-  if (!session) return null;
+  if (!session) {
+    swNotify('❌ Помилка: Не авторизовано у Supabase');
+    return null;
+  }
 
   try {
     const ext = blob.name

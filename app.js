@@ -2309,7 +2309,9 @@ async function publishMedia() {
       audioUrl = URL.createObjectURL(file); // fallback locally if no storage
     }
     
-    if (!audioUrl) throw new Error('Не вдалося завантажити медіа');
+    // If audioUrl is null, swSaveAudio already showed a notification (or user is not logged in).
+    // We just throw a silent error to stop execution but not show a duplicate generic notification.
+    if (!audioUrl) throw new Error('SILENT');
 
     // Handle cover (if present, upload to same bucket, else fallback)
     let coverUrl = COVERS[Math.floor(Math.random() * COVERS.length)];
@@ -2385,8 +2387,10 @@ async function publishMedia() {
     }
 
   } catch (err) {
-    console.error(err);
-    if (typeof showNotification === 'function') showNotification('❌ ' + (err.message || 'Помилка'));
+    if (err.message !== 'SILENT') {
+      console.error(err);
+      if (typeof showNotification === 'function') showNotification('❌ ' + (err.message || 'Помилка'));
+    }
   } finally {
     btn.innerText = 'Опублікувати';
     btn.disabled = false;
