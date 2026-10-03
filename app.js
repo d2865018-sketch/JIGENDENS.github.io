@@ -448,12 +448,31 @@ function selectMp3TagTrack(id) {
 function handleMp3TagCoverUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    tempMp3TagCover = e.target.result;
+  // Стискаємо обкладинку до 500px: інакше величезний base64 потрапляє в базу
+  fileToSmallDataUrl(file, 500).then((dataUrl) => {
+    tempMp3TagCover = dataUrl;
     renderMp3TagCoverPreview();
-  };
-  reader.readAsDataURL(file);
+  });
+}
+
+function fileToSmallDataUrl(file, maxSide = 500, quality = 0.85) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function renderMp3TagCoverPreview() {

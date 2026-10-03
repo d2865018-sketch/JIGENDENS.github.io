@@ -261,12 +261,37 @@ async function handleLogin(e) {
   }, 1200);
 }
 
+// ===== LEGACY AVATAR MIGRATION =====
+// Раніше аватар зберігався в метаданих акаунта як величезний base64.
+// Він потрапляв у JWT і викликав ERR_CONNECTION_RESET. Тепер зберігаємо лише URL.
+async function migrateLegacyAvatar(user) {
+  try {
+    if (!user || !user.customAvatar || !user.customAvatar.startsWith('data:')) return;
+    const url = await uploadAvatarToStorage(user.customAvatar);
+    if (!url) throw new Error('avatar upload failed');
+    const { error } = await supabaseClient.auth.updateUser({ data: { customAvatar: url } });
+    if (error) throw error;
+    await supabaseClient.auth.refreshSession();   // новий, малий токен
+    user.customAvatar = url;
+    updateTopbarLoggedIn(user);
+    console.info('[Avatar] перенесено в Storage');
+  } catch (e) {
+    console.warn('[Avatar] міграція не вдалась', e);
+    if (typeof showNotification === 'function') {
+      showNotification('⚠️ Не вдалося оновити аватар — завантаж його заново в профілі');
+    }
+  }
+}
+
 // ===== LOGIN SUCCESS =====
 async function loginSuccess(user, showNotif = true) {
   currentUser = user;
   localStorage.setItem('sw_last_email', user.email);
   closeAuth();
   updateTopbarLoggedIn(user);
+
+  // Старий аватар у base64 роздуває токен і ламає запити — переносимо його в Storage
+  migrateLegacyAvatar(user);
 
   // Restore liked tracks saved for this account
   if (typeof loadLiked === 'function') {
