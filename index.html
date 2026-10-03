@@ -86,6 +86,13 @@
         </svg>
         Спільнота
       </a>
+      <a href="#" class="nav-item" id="nav-messages" onclick="showSection('messages', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        Повідомлення
+        <span class="nav-badge" id="msg-badge" style="display:none">0</span>
+      </a>
     </nav>
 
     <div class="sidebar-playlists-header">
@@ -525,6 +532,7 @@
           </button>
           <h1 id="cp-name" style="margin-top:12px;">Плейлист</h1>
           <p class="section-subtitle" id="cp-owner"></p>
+          <div id="cp-write-slot" style="margin-top:8px;"></div>
           <p class="section-subtitle" id="cp-desc"></p>
           <button class="playlist-play-all-btn" onclick="playCommunityPlaylist()" style="margin-top:12px;">
             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
@@ -532,6 +540,47 @@
           </button>
         </div>
         <div class="tracks-list-full" id="cp-tracks-list"></div>
+      </section>
+
+      <!-- MESSAGES SECTION -->
+      <section class="section" id="section-messages">
+        <div class="msg-guest" id="msg-guest" style="display:none">
+          <div class="msg-guest-icon">💬</div>
+          <h2>Повідомлення</h2>
+          <p>Увійди в акаунт, щоб писати іншим користувачам.</p>
+          <button class="msg-write-btn" onclick="openAuth('login')">Увійти</button>
+        </div>
+        <div class="msg-layout" id="msg-layout">
+          <aside class="msg-sidebar">
+            <div class="msg-sidebar-head">
+              <h2>💬 Повідомлення</h2>
+              <input type="text" id="msg-search" class="msg-search" placeholder="Знайти користувача за іменем..." autocomplete="off" oninput="msgOnSearch(this.value)" />
+            </div>
+            <div class="msg-conv-list" id="msg-conv-list"></div>
+          </aside>
+          <div class="msg-chat" id="msg-chat">
+            <div class="msg-empty" id="msg-empty">
+              <div class="msg-empty-icon">✉️</div>
+              <p>Обери розмову або знайди користувача, щоб написати йому</p>
+            </div>
+            <div class="msg-chat-inner" id="msg-chat-inner" style="display:none">
+              <header class="msg-chat-head">
+                <button class="msg-back" onclick="msgCloseChat()" title="Назад">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div id="msg-chat-avatar"></div>
+                <div class="msg-chat-title" id="msg-chat-name"></div>
+              </header>
+              <div class="msg-thread" id="msg-thread"></div>
+              <div class="msg-compose">
+                <textarea id="msg-input" rows="1" maxlength="2000" placeholder="Напиши повідомлення..." onkeydown="msgInputKey(event)" oninput="msgAutoGrow(this)"></textarea>
+                <button class="msg-send" id="msg-send-btn" onclick="msgSend()" title="Надіслати">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="section" id="section-search">
@@ -1137,8 +1186,9 @@
     </div>
   </div>
 
-  <script src="storage.js?v=6"></script>
-  <script src="app.js?v=6"></script>
-  <script src="auth.js?v=6"></script>
+  <script src="storage.js?v=7"></script>
+  <script src="app.js?v=7"></script>
+  <script src="auth.js?v=7"></script>
+  <script src="messages.js?v=7"></script>
 </body>
 </html>

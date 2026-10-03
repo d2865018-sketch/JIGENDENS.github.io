@@ -137,6 +137,7 @@ function swMapRow(d, genre, forcePublic) {
     src: d.file_url,
     is_public: forcePublic || d.is_public || false,
     owner: d.owner_name || null,
+    owner_id: d.user_id || null,
     liked: false
   };
 }

@@ -717,7 +717,7 @@ function trackRowHTML(track, displayNum, ctx) {
       <div class="track-row-info">
         <div class="track-row-title">${track.title}</div>
         <div class="track-row-artist">${ctx === 'community'
-          ? `${escapeHtml(String(track.artist || ''))} · 👤 ${escapeHtml(String(track.owner || 'Користувач'))}`
+          ? `${escapeHtml(String(track.artist || ''))} · ${typeof msgOwnerLink === 'function' ? msgOwnerLink(track.owner_id, track.owner) : '👤 ' + escapeHtml(String(track.owner || 'Користувач'))}`
           : `${track.artist} · ${track.plays || '—'} прослуховувань`}</div>
       </div>
       <button class="track-row-like ${liked ? 'liked' : ''}" 
@@ -1104,6 +1104,7 @@ function showSection(name, el) {
   if (name === 'extractor') renderExtSavedList();
   if (name === 'mp3tag') renderMp3TagList();
   if (name === 'community') { renderCommunityList(); renderCommunityPlaylists(); }
+  if (name === 'messages' && typeof msgOnSectionOpen === 'function') msgOnSectionOpen();
 }
 
 async function renderCommunityList() {
@@ -2431,6 +2432,8 @@ function openCommunityPlaylist(id) {
   document.getElementById('cp-owner').textContent =
     `Опублікував: ${p.owner_name || 'Користувач'} · ${list.length} ${trackWord(list.length)}`;
   document.getElementById('cp-desc').textContent = p.description || '';
+  const writeSlot = document.getElementById('cp-write-slot');
+  if (writeSlot) writeSlot.innerHTML = (typeof msgWriteButton === 'function') ? msgWriteButton(p.user_id, p.owner_name) : '';
   document.getElementById('cp-tracks-list').innerHTML =
     resolved.map((t, i) => trackRowHTML(t, i, 'community')).join('');
 
@@ -2562,6 +2565,7 @@ async function renderCommunityMedia() {
             <span>${m.kind === 'video' ? '🎬' : '🖼️'} ${date}</span>
           </div>
           ${mine ? `<button class="comm-media-del" onclick="deleteCommunityMedia('${m.id}')">🗑️ Видалити</button>` : ''}
+          ${(!mine && typeof msgWriteButton === 'function') ? `<div style="margin-top:10px">${msgWriteButton(m.user_id, m.owner_name)}</div>` : ''}
         </div>
       </div>`;
   }).join('') + '</div>';

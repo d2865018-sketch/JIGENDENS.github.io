@@ -293,6 +293,9 @@ async function loginSuccess(user, showNotif = true) {
   // Старий аватар у base64 роздуває токен і ламає запити — переносимо його в Storage
   migrateLegacyAvatar(user);
 
+  // Особисті повідомлення: профіль, розмови, realtime
+  if (typeof msgInit === 'function') msgInit(user);
+
   // Restore liked tracks saved for this account
   if (typeof loadLiked === 'function') {
     loadLiked(user.email);
@@ -353,6 +356,8 @@ function handleLogoutLocal() {
     if (typeof renderLibraryList === 'function') renderLibraryList();
     if (typeof updateQueueList   === 'function') updateQueueList();
   }
+
+  if (typeof msgTeardown === 'function') msgTeardown();
 
   currentUser = null;
   closeDropdown();
@@ -576,6 +581,7 @@ async function saveProfileEdit() {
   if (!error) {
     currentUser.name = newName;
     currentUser.customAvatar = avatarValue;
+    if (typeof msgUpsertProfile === 'function') msgUpsertProfile(currentUser);
     updateTopbarLoggedIn(currentUser);
     if (typeof showNotification === 'function') {
       showNotification(`✅ Профіль оновлено`);
