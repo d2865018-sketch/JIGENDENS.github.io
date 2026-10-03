@@ -133,13 +133,21 @@ async function swLoadTracks(email) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      swNotify('❌ Помилка завантаження треків: ' + error.message);
+      if (error.message && error.message.includes('Failed to fetch')) {
+        swNotify('❌ Сервер недоступний (можливо, проект Supabase призупинено або немає інтернету)');
+      } else {
+        swNotify('❌ Помилка завантаження треків: ' + error.message);
+      }
       return [];
     }
     return data.map(d => swMapRow(d, 'Завантажене', false)).filter(t => t.src);
   } catch (e) {
     console.error('[Storage] swLoadTracks failed:', e);
-    swNotify('❌ Немає зв’язку з сервером (Supabase)');
+    if (e.message && e.message.includes('Failed to fetch')) {
+      swNotify('❌ Сервер недоступний (можливо, проект Supabase призупинено або немає інтернету)');
+    } else {
+      swNotify('❌ Немає зв’язку з сервером (Supabase)');
+    }
     return [];
   }
 }
