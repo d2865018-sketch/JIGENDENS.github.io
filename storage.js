@@ -108,6 +108,15 @@ async function swSaveTracksMeta(email, tracks) {
   }
 }
 
+function swSafeCover(cover, id) {
+  if (cover && (cover.startsWith('http') || cover.startsWith('data:'))) return cover;
+  const list = (typeof COVERS !== 'undefined' && COVERS.length) ? COVERS : null;
+  if (!list) return cover || '';
+  let h = 0;
+  for (const ch of String(id)) h = (h + ch.charCodeAt(0)) % 9973;
+  return list[h % list.length];
+}
+
 function swMapRow(d, genre, forcePublic) {
   publicUrlMap[d.id] = d.file_url;
   return {
@@ -115,7 +124,7 @@ function swMapRow(d, genre, forcePublic) {
     title: d.title,
     artist: d.artist || 'Невідомий',
     genre,
-    cover: d.cover_url || null,
+    cover: swSafeCover(d.cover_url, d.id),
     src: d.file_url,
     is_public: forcePublic || d.is_public || false,
     liked: false

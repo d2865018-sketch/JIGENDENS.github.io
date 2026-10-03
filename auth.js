@@ -464,13 +464,45 @@ function closeProfileEdit() {
 function handleAvatarUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  
+
+  // Стискаємо до 256x256 JPEG, щоб не роздувати дані профілю
   const reader = new FileReader();
   reader.onload = (e) => {
-    tempAvatarBase64 = e.target.result;
-    updateProfileModalAvatar();
+    const img = new Image();
+    img.onload = () => {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+      tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      updateProfileModalAvatar();
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+// Завантажує аватар у Supabase Storage і повертає публічний URL.
+// У метадані акаунта (а отже і в JWT) йде лише короткий URL.
+async function uploadAvatarToStorage(dataUrl) {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return null;
+    const blob = await (await fetch(dataUrl)).blob();
+    const path = `${session.user.id}/avatar.jpg`;
+    const { error } = await supabaseClient.storage
+      .from('music')
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (error) { console.warn('[Avatar]', error.message); return null; }
+    const { data } = supabaseClient.storage.from('music').getPublicUrl(path);
+    return data.publicUrl + '?v=' + Date.now();
+  } catch (e) {
+    console.warn('[Avatar] upload failed', e);
+    return null;
+  }
 }
 
 function updateProfileModalAvatar() {
@@ -499,16 +531,26 @@ async function saveProfileEdit() {
     return;
   }
   
+  // base64-картинку не зберігаємо в метаданих (вона потрапляє в JWT і ламає запити)
+  let avatarValue = tempAvatarBase64;
+  if (avatarValue && avatarValue.startsWith('data:')) {
+    avatarValue = await uploadAvatarToStorage(avatarValue);
+    if (!avatarValue) {
+      if (typeof showNotification === 'function') showNotification('❌ Не вдалося завантажити аватар');
+      return;
+    }
+  }
+
   const { data, error } = await supabaseClient.auth.updateUser({
     data: {
       name: newName,
-      customAvatar: tempAvatarBase64
+      customAvatar: avatarValue
     }
   });
 
   if (!error) {
     currentUser.name = newName;
-    currentUser.customAvatar = tempAvatarBase64;
+    currentUser.customAvatar = avatarValue;
     updateTopbarLoggedIn(currentUser);
     if (typeof showNotification === 'function') {
       showNotification(`✅ Профіль оновлено`);

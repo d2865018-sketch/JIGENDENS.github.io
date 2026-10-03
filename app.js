@@ -4,14 +4,20 @@
 
 // ===== CONFIG =====
 // Covers used as fallback for user-uploaded tracks
-const COVERS = [
-  'C:/Users/user/.gemini/antigravity-ide/brain/e4dae186-20ea-4351-9b96-9d0cb2f2653e/album_cover_1_1790801808009.jpg',
-  'C:/Users/user/.gemini/antigravity-ide/brain/e4dae186-20ea-4351-9b96-9d0cb2f2653e/album_cover_2_1790801818107.jpg',
-  'C:/Users/user/.gemini/antigravity-ide/brain/e4dae186-20ea-4351-9b96-9d0cb2f2653e/album_cover_3_1790801827240.jpg',
-  'C:/Users/user/.gemini/antigravity-ide/brain/e4dae186-20ea-4351-9b96-9d0cb2f2653e/album_cover_4_1790801849446.jpg',
-  'C:/Users/user/.gemini/antigravity-ide/brain/e4dae186-20ea-4351-9b96-9d0cb2f2653e/album_cover_5_1790801858353.jpg',
-  'C:/Users/user/.gemini/antigravity-ide/brain/e4dae186-20ea-4351-9b96-9d0cb2f2653e/album_cover_6_1790801869435.jpg',
+// Обкладинки-градієнти (вбудовані SVG, працюють на будь-якому пристрої)
+const COVER_GRADIENTS = [
+  ['#ff6b35', '#f7931e'], ['#667eea', '#764ba2'], ['#f093fb', '#f5576c'],
+  ['#4facfe', '#00f2fe'], ['#43e97b', '#38f9d7'], ['#fa709a', '#fee140'],
 ];
+const COVERS = COVER_GRADIENTS.map(([c1, c2], i) =>
+  'data:image/svg+xml;utf8,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">` +
+    `<defs><linearGradient id="g${i}" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>` +
+    `<rect width="300" height="300" fill="url(#g${i})"/>` +
+    `<text x="50%" y="58%" text-anchor="middle" font-size="120" fill="white" fill-opacity="0.85" font-family="sans-serif">♪</text></svg>`
+  )
+);
 
 // iTunes search terms per genre button
 const GENRE_TERMS = {
