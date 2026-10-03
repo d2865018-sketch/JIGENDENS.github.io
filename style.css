@@ -2977,3 +2977,27 @@ body {
   .msg-back { display: flex; }
   .msg-bubble { max-width: 85%; }
 }
+
+
+/* ===== Кнопка "Встановити додаток" (PWA) ===== */
+.install-btn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border-hover);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.install-btn:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 600px) {
+  .install-btn span { display: none; }
+  .install-btn { padding: 9px 11px; }
+}

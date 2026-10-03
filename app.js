@@ -509,11 +509,7 @@ async function saveMp3Tag() {
       document.getElementById('player-title').textContent = track.title;
       document.getElementById('player-artist').textContent = track.artist;
       document.getElementById('player-cover').style.backgroundImage = `url('${track.cover}')`;
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata.title = track.title;
-        navigator.mediaSession.metadata.artist = track.artist;
-        navigator.mediaSession.metadata.artwork = [{ src: track.cover, sizes: '512x512', type: 'image/png' }];
-      }
+      updateMediaSessionMetadata(track);
     }
 }
 
@@ -785,6 +781,9 @@ function playTrackByGlobalIndex(globalIdx) {
 
   // Update like button
   updateLikeBtn();
+
+  // Назва й обкладинка на екрані блокування телефона / у системному плеєрі
+  updateMediaSessionMetadata(track);
 
   // Load audio
   if (track.src) {
@@ -1832,6 +1831,19 @@ function setupKeyboard() {
 }
 
 // ===== MEDIA SESSION =====
+function updateMediaSessionMetadata(track) {
+  if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined' || !track) return;
+  try {
+    const artwork = track.cover ? [{ src: track.cover, sizes: '512x512' }] : [];
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.title || '',
+      artist: track.artist || '',
+      album: 'SoundWave',
+      artwork
+    });
+  } catch (e) { /* не критично */ }
+}
+
 function setupMediaSession() {
   if (!('mediaSession' in navigator)) return;
   navigator.mediaSession.setActionHandler('play', togglePlay);

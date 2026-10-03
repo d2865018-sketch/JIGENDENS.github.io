@@ -5,11 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SoundWave — Музична платформа</title>
   <meta name="description" content="SoundWave — сучасна музична платформа для прослуховування та відкриття нової музики. Слухай треки, відкривай нових артистів та насолоджуйся звуком." />
+  <!-- PWA: встановлення як додаток -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="SoundWave" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="auth.css?v=8" />
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script type="text/javascript">
      (function(){
@@ -123,6 +132,12 @@
         <input type="text" id="search-input" placeholder="Шукати треки, артистів..." oninput="handleSearch(this.value)" />
       </div>
       <div class="topbar-right">
+        <button class="install-btn" id="install-btn" onclick="installApp()" title="Встановити як додаток" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Встановити</span>
+        </button>
         <button class="upload-btn" id="upload-btn" onclick="document.getElementById('file-upload').click()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
             <polyline points="16 16 12 12 8 16"/>
@@ -1186,9 +1201,58 @@
     </div>
   </div>
 
-  <script src="storage.js?v=7"></script>
-  <script src="app.js?v=7"></script>
-  <script src="auth.js?v=7"></script>
-  <script src="messages.js?v=7"></script>
+  <script src="storage.js?v=8"></script>
+  <script src="app.js?v=8"></script>
+  <script src="auth.js?v=8"></script>
+  <script src="messages.js?v=8"></script>
+
+  <script>
+    // ===== PWA: service worker + кнопка "Встановити" =====
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('[PWA] sw:', e); });
+      });
+    }
+
+    var deferredInstallPrompt = null;
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    function showInstallBtn(show) {
+      var b = document.getElementById('install-btn');
+      if (b) b.style.display = show ? 'flex' : 'none';
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      showInstallBtn(!isStandalone);
+    });
+    window.addEventListener('appinstalled', function () {
+      deferredInstallPrompt = null;
+      showInstallBtn(false);
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+      // На iPhone/iPad автоматичного вікна встановлення немає — показуємо підказку
+      if (isIOS && !isStandalone) showInstallBtn(true);
+      if (deferredInstallPrompt && !isStandalone) showInstallBtn(true);
+    });
+
+    async function installApp() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        var choice = await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        if (choice && choice.outcome === 'accepted') showInstallBtn(false);
+        return;
+      }
+      if (isIOS) {
+        alert('Щоб встановити SoundWave на iPhone/iPad:\n\n1. Натисни кнопку «Поділитися» (квадрат зі стрілкою) у Safari\n2. Обери «На екран «Додому»»\n3. Натисни «Додати»');
+      } else {
+        alert('Щоб встановити додаток, відкрий меню браузера (⋮) і обери «Встановити додаток» або «Додати на головний екран».');
+      }
+    }
+  </script>
 </body>
 </html>
