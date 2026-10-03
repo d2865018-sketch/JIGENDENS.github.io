@@ -68,6 +68,7 @@ async function swSaveTracksMeta(email, tracks) {
   const session = await swGetSession();
   if (!session) return false;
 
+  const ownerName = (session.user.user_metadata && session.user.user_metadata.name) || 'Користувач';
   const rows = [];
   let skipped = 0;
   for (const t of tracks) {
@@ -82,7 +83,8 @@ async function swSaveTracksMeta(email, tracks) {
       artist: t.artist,
       file_url: fileUrl,
       cover_url: t.cover,
-      is_public: !!t.is_public
+      is_public: !!t.is_public,
+      owner_name: ownerName
     });
   }
   if (rows.length === 0) {
@@ -91,9 +93,16 @@ async function swSaveTracksMeta(email, tracks) {
   }
 
   try {
-    const { error } = await supabaseClient
+    let { error } = await supabaseClient
       .from('tracks')
       .upsert(rows, { onConflict: 'id' });
+
+    // Якщо колонки owner_name ще немає (SQL не виконано) — зберігаємо без неї
+    if (error && /owner_name/i.test(error.message)) {
+      ({ error } = await supabaseClient
+        .from('tracks')
+        .upsert(rows.map(({ owner_name, ...r }) => r), { onConflict: 'id' }));
+    }
 
     if (error) {
       console.error('Upsert error:', error);
@@ -127,6 +136,7 @@ function swMapRow(d, genre, forcePublic) {
     cover: swSafeCover(d.cover_url, d.id),
     src: d.file_url,
     is_public: forcePublic || d.is_public || false,
+    owner: d.owner_name || null,
     liked: false
   };
 }
@@ -145,6 +155,11 @@ async function swLoadTracks(email) {
     if (error) {
       swNotify('❌ Помилка завантаження треків: ' + error.message);
       return [];
+    }
+    if (data.some(d => !d.owner_name)) {
+      const nm = (session.user.user_metadata && session.user.user_metadata.name) || 'Користувач';
+      supabaseClient.from('tracks').update({ owner_name: nm })
+        .eq('user_id', session.user.id).is('owner_name', null).then(() => {}, () => {});
     }
     return data.map(d => swMapRow(d, 'Завантажене', false)).filter(t => t.src);
   } catch (e) {
@@ -294,5 +309,82 @@ async function swLoadPublicPlaylists() {
   } catch (e) {
     console.error('[Playlist] load failed:', e);
     return [];
+  }
+}
+
+
+/* ========================================
+   Фото і відео у Спільноті
+   ======================================== */
+
+async function swPublishMedia({ kind, caption, blob, ext }, ownerName) {
+  const session = await swGetSession();
+  if (!session) { swNotify('⚠️ Увійди в акаунт, щоб публікувати'); return { ok: false }; }
+
+  const id = String(Date.now()) + Math.floor(Math.random() * 1000);
+  const path = `${session.user.id}/${id}.${ext}`;
+
+  try {
+    const up = await supabaseClient.storage.from('media')
+      .upload(path, blob, { upsert: false, contentType: blob.type || undefined });
+    if (up.error) {
+      swNotify('❌ Помилка завантаження: ' + up.error.message);
+      return { ok: false };
+    }
+
+    const { data } = supabaseClient.storage.from('media').getPublicUrl(path);
+    const { error } = await supabaseClient.from('community_media').insert({
+      id,
+      user_id: session.user.id,
+      owner_name: ownerName || 'Користувач',
+      kind,
+      caption: caption || '',
+      file_url: data.publicUrl
+    });
+    if (error) {
+      await supabaseClient.storage.from('media').remove([path]);
+      swNotify('❌ Не вдалося опублікувати: ' + error.message);
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[Media] publish failed:', e);
+    swNotify('❌ Немає зв’язку з сервером');
+    return { ok: false };
+  }
+}
+
+async function swLoadMedia() {
+  if (typeof supabaseClient === 'undefined') return [];
+  try {
+    const { data, error } = await supabaseClient
+      .from('community_media')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    if (error) { swNotify('❌ Помилка завантаження фото/відео: ' + error.message); return []; }
+    return data || [];
+  } catch (e) {
+    console.error('[Media] load failed:', e);
+    return [];
+  }
+}
+
+async function swDeleteMedia(item) {
+  const session = await swGetSession();
+  if (!session) return false;
+  try {
+    const marker = '/media/';
+    const i = item.file_url.indexOf(marker);
+    if (i !== -1) {
+      const path = decodeURIComponent(item.file_url.slice(i + marker.length).split('?')[0]);
+      await supabaseClient.storage.from('media').remove([path]);
+    }
+    const { error } = await supabaseClient.from('community_media').delete().eq('id', item.id);
+    if (error) { swNotify('❌ Не вдалося видалити: ' + error.message); return false; }
+    return true;
+  } catch (e) {
+    console.error('[Media] delete failed:', e);
+    return false;
   }
 }

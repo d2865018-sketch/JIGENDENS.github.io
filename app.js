@@ -697,7 +697,9 @@ function trackRowHTML(track, displayNum, ctx) {
       </div>
       <div class="track-row-info">
         <div class="track-row-title">${track.title}</div>
-        <div class="track-row-artist">${track.artist} · ${track.plays || '—'} прослуховувань</div>
+        <div class="track-row-artist">${ctx === 'community'
+          ? `${escapeHtml(String(track.artist || ''))} · 👤 ${escapeHtml(String(track.owner || 'Користувач'))}`
+          : `${track.artist} · ${track.plays || '—'} прослуховувань`}</div>
       </div>
       <button class="track-row-like ${liked ? 'liked' : ''}" 
               onclick="event.stopPropagation(); toggleLikeById(${track.id})"
@@ -2338,13 +2340,18 @@ async function unpublishCurrentPlaylist() {
 }
 
 function switchCommunityTab(tab) {
-  const tracksEl = document.getElementById('community-list');
-  const plEl = document.getElementById('community-playlists-list');
-  if (!tracksEl || !plEl) return;
-  tracksEl.style.display = tab === 'tracks' ? '' : 'none';
-  plEl.style.display = tab === 'playlists' ? '' : 'none';
-  document.getElementById('comm-tab-tracks').classList.toggle('active', tab === 'tracks');
-  document.getElementById('comm-tab-playlists').classList.toggle('active', tab === 'playlists');
+  const panes = {
+    tracks: document.getElementById('community-list'),
+    playlists: document.getElementById('community-playlists-list'),
+    media: document.getElementById('community-media-panel'),
+  };
+  if (!panes.tracks || !panes.playlists) return;
+  Object.entries(panes).forEach(([k, el]) => { if (el) el.style.display = k === tab ? '' : 'none'; });
+  ['tracks', 'playlists', 'media'].forEach(k => {
+    const btn = document.getElementById('comm-tab-' + k);
+    if (btn) btn.classList.toggle('active', k === tab);
+  });
+  if (tab === 'media') renderCommunityMedia();
 }
 
 async function renderCommunityPlaylists() {
@@ -2410,3 +2417,147 @@ function playCommunityPlaylist() {
   const first = getAllTracks().find(t => String(t.id) === String(p.tracks[0].id));
   if (first) playTrackByGlobalIndex(getTrackGlobalIndex(first));
 }
+
+
+// =============================================
+//  ФОТО І ВІДЕО У СПІЛЬНОТІ
+// =============================================
+let pendingMediaFile = null;
+let communityMedia = [];
+const MAX_VIDEO_MB = 50;
+
+function onMediaFileChosen(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const isImg = f.type.startsWith('image/');
+  const isVid = f.type.startsWith('video/');
+  if (!isImg && !isVid) {
+    showNotification('⚠️ Обери фото або відео');
+    input.value = '';
+    return;
+  }
+  if (isVid && f.size > MAX_VIDEO_MB * 1024 * 1024) {
+    showNotification(`⚠️ Відео завелике (максимум ${MAX_VIDEO_MB} МБ)`);
+    input.value = '';
+    return;
+  }
+  pendingMediaFile = f;
+  const label = document.getElementById('media-file-name');
+  if (label) label.textContent = (isImg ? '🖼️ ' : '🎬 ') + f.name;
+}
+
+// Стискає фото до 1600px, щоб швидко завантажувалось
+function compressImage(file, maxSide = 1600, quality = 0.85) {
+  return new Promise((resolve) => {
+    if (file.type === 'image/gif') return resolve(file);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => { URL.revokeObjectURL(url); resolve(b || file); }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+async function publishMedia() {
+  if (typeof currentUser === 'undefined' || !currentUser) {
+    showNotification('⚠️ Увійди в акаунт, щоб публікувати');
+    return;
+  }
+  if (!pendingMediaFile) {
+    showNotification('⚠️ Спершу обери фото або відео');
+    return;
+  }
+
+  const file = pendingMediaFile;
+  const kind = file.type.startsWith('video/') ? 'video' : 'photo';
+  const caption = (document.getElementById('media-caption').value || '').trim().slice(0, 300);
+  const btn = document.getElementById('media-publish-btn');
+  if (btn) btn.disabled = true;
+  showNotification(kind === 'video' ? '⏳ Завантажуємо відео...' : '⏳ Завантажуємо фото...');
+
+  let blob = file;
+  let ext = (file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || (kind === 'video' ? 'mp4' : 'jpg');
+  if (kind === 'photo' && file.type !== 'image/gif') {
+    blob = await compressImage(file);
+    ext = 'jpg';
+  }
+
+  const res = await swPublishMedia({ kind, caption, blob, ext }, currentUser.name);
+  if (btn) btn.disabled = false;
+  if (!res.ok) return;
+
+  pendingMediaFile = null;
+  document.getElementById('media-file').value = '';
+  document.getElementById('media-caption').value = '';
+  document.getElementById('media-file-name').textContent = '';
+  showNotification('✅ Опубліковано!');
+  renderCommunityMedia();
+}
+
+async function renderCommunityMedia() {
+  const el = document.getElementById('community-media-list');
+  if (!el) return;
+  el.innerHTML = '<div class="empty-state" style="padding:40px; color:var(--text-muted);">Завантаження...</div>';
+
+  communityMedia = (typeof swLoadMedia === 'function') ? await swLoadMedia() : [];
+  const session = (typeof swGetSession === 'function') ? await swGetSession() : null;
+  const myId = session ? session.user.id : null;
+
+  if (communityMedia.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <span>🖼️</span>
+        <p>Поки що немає фото та відео. Поділись першим!</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = '<div class="comm-media-grid">' + communityMedia.map(m => {
+    const url = escapeHtml(String(m.file_url));
+    const box = m.kind === 'video'
+      ? `<video src="${url}" controls preload="metadata" playsinline></video>`
+      : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" data-nofb="1" loading="lazy" alt="" /></a>`;
+    const date = new Date(m.created_at).toLocaleDateString('uk-UA');
+    const mine = myId && m.user_id === myId;
+    return `
+      <div class="comm-media-card">
+        <div class="comm-media-box">${box}</div>
+        <div class="comm-media-info">
+          ${m.caption ? `<div class="comm-media-caption">${escapeHtml(String(m.caption))}</div>` : ''}
+          <div class="comm-media-meta">
+            <span class="comm-media-owner">👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}</span>
+            <span>${m.kind === 'video' ? '🎬' : '🖼️'} ${date}</span>
+          </div>
+          ${mine ? `<button class="comm-media-del" onclick="deleteCommunityMedia('${m.id}')">🗑️ Видалити</button>` : ''}
+        </div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+async function deleteCommunityMedia(id) {
+  const item = communityMedia.find(m => String(m.id) === String(id));
+  if (!item) return;
+  if (!confirm('Видалити цю публікацію?')) return;
+  const ok = await swDeleteMedia(item);
+  if (ok) {
+    showNotification('🗑️ Публікацію видалено');
+    renderCommunityMedia();
+  }
+}
+
+// Якщо обкладинка не завантажилась — підставляємо вбудований градієнт
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!img || img.tagName !== 'IMG' || img.dataset.nofb || img.dataset.fb) return;
+  img.dataset.fb = '1';
+  let h = 0;
+  for (const ch of String(img.alt || img.src).slice(0, 40)) h = (h + ch.charCodeAt(0)) % 9973;
+  img.src = COVERS[h % COVERS.length];
+}, true);

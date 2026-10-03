@@ -474,13 +474,37 @@
           .comm-pl-name { font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
           .comm-pl-owner { font-size:12px; color:var(--accent); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
           .comm-pl-count { font-size:11px; color:var(--text-muted); margin-top:2px; }
+          .media-upload-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px; padding:14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; }
+          .media-upload-bar input[type="text"] { flex:1; min-width:180px; padding:10px 14px; border-radius:100px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); font-family:inherit; font-size:13px; }
+          .media-file-name { font-size:12px; color:var(--text-muted); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .comm-media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
+          .comm-media-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+          .comm-media-box { background:#000; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
+          .comm-media-box img, .comm-media-box video { width:100%; height:100%; object-fit:contain; display:block; }
+          .comm-media-info { padding:12px 14px; }
+          .comm-media-caption { font-size:14px; margin-bottom:8px; word-break:break-word; }
+          .comm-media-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); }
+          .comm-media-owner { color:var(--accent); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .comm-media-del { margin-top:10px; background:none; border:1px solid var(--border); color:var(--text-muted); border-radius:100px; padding:5px 12px; font-size:12px; cursor:pointer; font-family:inherit; }
+          .comm-media-del:hover { color:#e05574; border-color:#e05574; }
         </style>
         <div class="comm-tabs">
           <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">🎵 Треки</button>
           <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">📂 Плейлисти</button>
+          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">🖼️ Фото і відео</button>
         </div>
         <div class="tracks-list-full" id="community-list"></div>
         <div id="community-playlists-list" style="display:none"></div>
+        <div id="community-media-panel" style="display:none">
+          <div class="media-upload-bar">
+            <input type="text" id="media-caption" maxlength="300" placeholder="Підпис (необов’язково)" />
+            <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
+            <button class="comm-tab" onclick="document.getElementById('media-file').click()">📎 Обрати фото/відео</button>
+            <span id="media-file-name" class="media-file-name"></span>
+            <button class="comm-tab active" id="media-publish-btn" onclick="publishMedia()">Опублікувати</button>
+          </div>
+          <div id="community-media-list"></div>
+        </div>
       </section>
 
       <!-- COMMUNITY PLAYLIST VIEW -->
@@ -1104,8 +1128,8 @@
     </div>
   </div>
 
-  <script src="storage.js?v=4"></script>
-  <script src="app.js?v=4"></script>
-  <script src="auth.js?v=4"></script>
+  <script src="storage.js?v=5"></script>
+  <script src="app.js?v=5"></script>
+  <script src="auth.js?v=5"></script>
 </body>
 </html>
