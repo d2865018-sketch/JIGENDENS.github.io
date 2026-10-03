@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
@@ -451,58 +451,67 @@
       </section>
 
       <!-- SEARCH RESULTS -->
-      <!-- COMMUNITY SECTION -->
+      <!-- COMMUNITY SECTION — Instagram-style -->
       <section class="section" id="section-community">
-        <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+
+        <!-- Stories-style playlists bar -->
+        <div class="comm-stories-bar" id="comm-stories-bar">
+          <div class="comm-stories-scroll" id="comm-stories-scroll">
+            <!-- JS fills playlist circles here -->
+          </div>
+          <button class="comm-stories-arrow comm-stories-arrow--right" id="comm-stories-arrow-r" onclick="scrollStoriesRight()" aria-label="Далі">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="comm-tabs">
+          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
+            Треки
+          </button>
+          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Плейлисти
+          </button>
+          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Стрічка
+          </button>
+        </div>
+
+        <!-- Create post bar (for media tab) -->
+        <div class="comm-create-bar" id="comm-create-bar" style="display:none">
+          <div class="comm-create-avatar" id="comm-create-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <input type="text" id="media-caption" maxlength="300" placeholder="Що нового?" class="comm-create-input" />
+          <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
+          <div class="comm-create-actions">
+            <button class="comm-create-attach" onclick="document.getElementById('media-file').click()" title="Додати фото/відео">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+            <span id="media-file-name" class="comm-create-filename"></span>
+            <button class="comm-create-publish" id="media-publish-btn" onclick="publishMedia()">Поділитися</button>
+          </div>
+        </div>
+
+        <!-- Header with publish button -->
+        <div class="comm-section-top" id="comm-section-top">
           <div>
             <h1>🌍 Спільнота</h1>
             <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
           </div>
           <button class="upload-btn" onclick="showSection('mp3tag', document.getElementById('nav-mp3tag'))">
-            Опублікувати трек
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Опублікувати
           </button>
         </div>
-        <style>
-          .comm-tabs { display:flex; gap:8px; margin:4px 0 18px; }
-          .comm-tab { padding:9px 20px; border-radius:100px; border:1px solid var(--border); background:var(--bg-elevated); color:var(--text-secondary); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:var(--transition); }
-          .comm-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
-          .comm-pl-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:18px; }
-          .comm-pl-card { cursor:pointer; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; padding:12px; transition:var(--transition); }
-          .comm-pl-card:hover { border-color:var(--accent); transform:translateY(-3px); }
-          .comm-pl-cover { width:100%; aspect-ratio:1; border-radius:10px; overflow:hidden; margin-bottom:10px; }
-          .comm-pl-cover img { width:100%; height:100%; object-fit:cover; display:block; }
-          .comm-pl-name { font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .comm-pl-owner { font-size:12px; color:var(--accent); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .comm-pl-count { font-size:11px; color:var(--text-muted); margin-top:2px; }
-          .media-upload-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px; padding:14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; }
-          .media-upload-bar input[type="text"] { flex:1; min-width:180px; padding:10px 14px; border-radius:100px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); font-family:inherit; font-size:13px; }
-          .media-file-name { font-size:12px; color:var(--text-muted); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .comm-media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
-          .comm-media-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-          .comm-media-box { background:#000; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
-          .comm-media-box img, .comm-media-box video { width:100%; height:100%; object-fit:contain; display:block; }
-          .comm-media-info { padding:12px 14px; }
-          .comm-media-caption { font-size:14px; margin-bottom:8px; word-break:break-word; }
-          .comm-media-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); }
-          .comm-media-owner { color:var(--accent); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .comm-media-del { margin-top:10px; background:none; border:1px solid var(--border); color:var(--text-muted); border-radius:100px; padding:5px 12px; font-size:12px; cursor:pointer; font-family:inherit; }
-          .comm-media-del:hover { color:#e05574; border-color:#e05574; }
-        </style>
-        <div class="comm-tabs">
-          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">🎵 Треки</button>
-          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">📂 Плейлисти</button>
-          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">🖼️ Фото і відео</button>
-        </div>
+
+        <!-- Tab content panes -->
         <div class="tracks-list-full" id="community-list"></div>
         <div id="community-playlists-list" style="display:none"></div>
         <div id="community-media-panel" style="display:none">
-          <div class="media-upload-bar">
-            <input type="text" id="media-caption" maxlength="300" placeholder="Підпис (необов’язково)" />
-            <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
-            <button class="comm-tab" onclick="document.getElementById('media-file').click()">📎 Обрати фото/відео</button>
-            <span id="media-file-name" class="media-file-name"></span>
-            <button class="comm-tab active" id="media-publish-btn" onclick="publishMedia()">Опублікувати</button>
-          </div>
           <div id="community-media-list"></div>
         </div>
       </section>

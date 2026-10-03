@@ -2370,7 +2370,14 @@ function switchCommunityTab(tab) {
     const btn = document.getElementById('comm-tab-' + k);
     if (btn) btn.classList.toggle('active', k === tab);
   });
+  // Show create-post bar only on media tab
+  const createBar = document.getElementById('comm-create-bar');
+  if (createBar) createBar.style.display = tab === 'media' ? 'flex' : 'none';
+  // Show section header on tracks/playlists, hide on media
+  const sectionTop = document.getElementById('comm-section-top');
+  if (sectionTop) sectionTop.style.display = tab === 'media' ? 'none' : 'flex';
   if (tab === 'media') renderCommunityMedia();
+  if (tab === 'playlists') renderCommunityPlaylists();
 }
 
 async function renderCommunityPlaylists() {
