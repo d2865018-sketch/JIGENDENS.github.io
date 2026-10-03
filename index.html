@@ -1215,31 +1215,36 @@
     }
 
     var deferredInstallPrompt = null;
+    var ua = navigator.userAgent;
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    var isIOS = /iphone|ipad|ipod/i.test(ua) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isAndroid = /android/i.test(ua);
+    var isEdge = /Edg\//.test(ua);
+    var isFirefox = /firefox|fxios/i.test(ua);
+    var isChrome = /chrome|crios/i.test(ua) && !isEdge;
 
     function showInstallBtn(show) {
       var b = document.getElementById('install-btn');
       if (b) b.style.display = show ? 'flex' : 'none';
     }
 
+    // Кнопка видна завжди, поки додаток не встановлено
+    document.addEventListener('DOMContentLoaded', function () {
+      showInstallBtn(!isStandalone);
+    });
+
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
-      deferredInstallPrompt = e;
-      showInstallBtn(!isStandalone);
+      deferredInstallPrompt = e;   // тепер встановлення можливе в один клік
     });
     window.addEventListener('appinstalled', function () {
       deferredInstallPrompt = null;
       showInstallBtn(false);
     });
-    document.addEventListener('DOMContentLoaded', function () {
-      // На iPhone/iPad автоматичного вікна встановлення немає — показуємо підказку
-      if (isIOS && !isStandalone) showInstallBtn(true);
-      if (deferredInstallPrompt && !isStandalone) showInstallBtn(true);
-    });
 
     async function installApp() {
+      // 1. Браузер дозволив встановлення в один клік
       if (deferredInstallPrompt) {
         deferredInstallPrompt.prompt();
         var choice = await deferredInstallPrompt.userChoice;
@@ -1247,11 +1252,24 @@
         if (choice && choice.outcome === 'accepted') showInstallBtn(false);
         return;
       }
+      // 2. Інакше — підказка для конкретного браузера
+      var msg;
       if (isIOS) {
-        alert('Щоб встановити SoundWave на iPhone/iPad:\n\n1. Натисни кнопку «Поділитися» (квадрат зі стрілкою) у Safari\n2. Обери «На екран «Додому»»\n3. Натисни «Додати»');
+        msg = 'Щоб встановити SoundWave на iPhone/iPad:\n\n1. Відкрий сайт у Safari\n2. Натисни «Поділитися» (квадрат зі стрілкою)\n3. Обери «На екран «Додому»» і натисни «Додати»';
+      } else if (isAndroid && isFirefox) {
+        msg = 'Відкрий меню Firefox (⋮) і обери «Установити».';
+      } else if (isAndroid) {
+        msg = 'Відкрий меню браузера (⋮) і обери «Установити додаток» або «Додати на головний екран».';
+      } else if (isEdge) {
+        msg = 'Щоб встановити SoundWave в Microsoft Edge:\n\n1. Натисни «⋯» (три крапки) праворуч угорі\n2. Обери «Додатки»\n3. Натисни «Установити цей сайт як додаток»';
+      } else if (isChrome) {
+        msg = 'Щоб встановити SoundWave в Chrome:\n\n1. Натисни «⋮» (три крапки) праворуч угорі\n2. Обери «Трансляція, збереження й поширення»\n3. Натисни «Установити сторінку як додаток»\n\nАбо натисни іконку встановлення в кінці адресного рядка.';
+      } else if (isFirefox) {
+        msg = 'Firefox на комп’ютері не вміє встановлювати сайти як додатки. Відкрий SoundWave в Chrome або Edge.';
       } else {
-        alert('Щоб встановити додаток, відкрий меню браузера (⋮) і обери «Встановити додаток» або «Додати на головний екран».');
+        msg = 'У Safari на Mac: меню «Файл» → «Додати до Dock». В інших браузерах шукай пункт «Установити додаток» у меню.';
       }
+      alert(msg);
     }
   </script>
 </body>
