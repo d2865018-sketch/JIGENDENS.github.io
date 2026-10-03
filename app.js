@@ -1093,6 +1093,13 @@ async function renderCommunityList() {
   }
 
   container.innerHTML = '';
+  // Set container styles to look like a feed
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.gap = '30px';
+  container.style.maxWidth = '600px';
+  container.style.margin = '0 auto';
+  
   publicTracks.forEach((track) => {
     // We add them to our global tracks array if they are not there, so we can play them
     const existingIdx = tracks.findIndex(t => String(t.id) === String(track.id));
@@ -1102,7 +1109,70 @@ async function renderCommunityList() {
       finalIdx = tracks.length - 1;
     }
     
-    container.appendChild(createTrackItem(tracks[finalIdx], finalIdx, 'community-list'));
+    // Create Instagram-like post element
+    const postEl = document.createElement('div');
+    postEl.style.backgroundColor = 'var(--bg-card)';
+    postEl.style.borderRadius = '12px';
+    postEl.style.border = '1px solid var(--border)';
+    postEl.style.overflow = 'hidden';
+    postEl.style.padding = '16px';
+    
+    // Post Header (Avatar + Name)
+    const headerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <img src="${track.cover || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border);" />
+        <div>
+          <div style="font-weight: 600; font-size: 15px;">${escapeHtml(track.artist || 'Користувач')}</div>
+        </div>
+      </div>
+    `;
+    
+    // Media Content
+    let mediaHTML = '';
+    const src = track.src || '';
+    const genre = track.genre || 'audio';
+    
+    if (genre === 'image' || src.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+      mediaHTML = `<img src="${src}" style="width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; background: #000;" onerror="this.src='https://via.placeholder.com/400x400?text=Помилка+завантаження'" />`;
+    } else if (genre === 'video' || src.match(/\.(mp4|webm|ogg)$/i)) {
+      mediaHTML = `<video src="${src}" controls style="width: 100%; max-height: 500px; object-fit: contain; border-radius: 8px; background: #000;"></video>`;
+    } else {
+      // Audio or YouTube link (fallback to simple link if not playable directly)
+      if (src.includes('youtube.com') || src.includes('youtu.be')) {
+        mediaHTML = `<a href="${src}" target="_blank" style="display: block; padding: 16px; background: var(--bg-elevated); border-radius: 8px; color: #ff6b35; text-decoration: none; text-align: center; font-weight: 600;">📺 Відкрити відео (YouTube)</a>`;
+      } else {
+        // Standard audio player
+        mediaHTML = `
+          <div style="background: var(--bg-elevated); padding: 16px; border-radius: 8px; display: flex; align-items: center; gap: 16px;">
+            <button onclick="playTrackByGlobalIndex(${finalIdx})" style="background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white;">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M8 5v14l11-7z"></path></svg>
+            </button>
+            <div style="flex: 1; overflow: hidden;">
+              <div style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${escapeHtml(track.title)}</div>
+              <div style="font-size: 13px; color: var(--text-muted);">Аудіотрек</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // Post Footer (Description and Actions)
+    const footerHTML = `
+      <div style="margin-top: 16px;">
+        <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+          <button style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0; display: flex; align-items: center; gap: 6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          </button>
+        </div>
+        <div style="font-size: 14px;">
+          <span style="font-weight: 600;">${escapeHtml(track.artist || 'Користувач')}</span>
+          <span>${escapeHtml(track.title || '')}</span>
+        </div>
+      </div>
+    `;
+    
+    postEl.innerHTML = headerHTML + mediaHTML + footerHTML;
+    container.appendChild(postEl);
   });
 }
 
@@ -2268,26 +2338,26 @@ async function deleteUserTrack(trackId) {
 
 // ===== PUBLISH MEDIA =====
 async function publishMedia() {
-  const fileInput = document.getElementById('publish-file');
+  const urlInput = document.getElementById('publish-url');
   const titleInput = document.getElementById('publish-title').value.trim();
   const artistInput = document.getElementById('publish-artist').value.trim();
-  const coverInput = document.getElementById('publish-cover');
+  const typeSelect = document.getElementById('publish-type').value;
   const btn = document.querySelector('.publish-btn');
 
-  if (!fileInput.files.length) {
-    if (typeof showNotification === 'function') showNotification('❌ Виберіть файл!');
+  const mediaUrl = urlInput ? urlInput.value.trim() : '';
+
+  if (!mediaUrl) {
+    if (typeof showNotification === 'function') showNotification('❌ Введіть посилання на медіа!');
     return;
   }
-  if (!titleInput || !artistInput) {
-    if (typeof showNotification === 'function') showNotification('❌ Введіть назву та виконавця!');
+  if (!titleInput) {
+    if (typeof showNotification === 'function') showNotification('❌ Введіть текст поста!');
     return;
   }
 
-  const file = fileInput.files[0];
-  const coverFile = coverInput.files.length ? coverInput.files[0] : null;
   const trackId = 'pub_' + Date.now();
 
-  btn.innerText = 'Завантаження...';
+  btn.innerText = 'Публікація...';
   btn.disabled = true;
 
   try {
@@ -2301,46 +2371,15 @@ async function publishMedia() {
       return;
     }
 
-    // Upload audio
-    let audioUrl = '';
-    if (typeof swSaveAudio === 'function') {
-      audioUrl = await swSaveAudio(trackId, file);
-    } else {
-      audioUrl = URL.createObjectURL(file); // fallback locally if no storage
-    }
-    
-    // If audioUrl is null, swSaveAudio already showed a notification (or user is not logged in).
-    // We just throw a silent error to stop execution but not show a duplicate generic notification.
-    if (!audioUrl) throw new Error('SILENT');
-
-    // Handle cover (if present, upload to same bucket, else fallback)
-    let coverUrl = COVERS[Math.floor(Math.random() * COVERS.length)];
-    if (coverFile && typeof supabaseClient !== 'undefined') {
-      try {
-        const session = await swGetSession();
-        if (session) {
-          const ext = coverFile.name.split('.').pop().toLowerCase() || 'jpg';
-          const coverPath = `${session.user.id}/cover_${trackId}.${ext}`;
-          const { error } = await supabaseClient.storage.from('music').upload(coverPath, coverFile, { upsert: true, contentType: coverFile.type });
-          if (!error) {
-            const { data } = supabaseClient.storage.from('music').getPublicUrl(coverPath);
-            coverUrl = data.publicUrl;
-          }
-        }
-      } catch (e) {
-        console.log('Cover upload error', e);
-      }
-    } else if (coverFile) {
-      coverUrl = URL.createObjectURL(coverFile); // fallback local
-    }
-
-    // Prepare track object
+    // Prepare track object. 
+    // We store the media type in the "genre" field so we can render it differently in Community.
     const newTrack = {
       id: trackId,
       title: titleInput,
-      artist: artistInput,
-      src: audioUrl,
-      cover: coverUrl,
+      artist: artistInput || user.name,
+      src: mediaUrl,
+      cover: user.customAvatar || COVERS[Math.floor(Math.random() * COVERS.length)], // use author avatar as cover for now
+      genre: typeSelect, // 'audio', 'video', or 'image'
       is_public: true
     };
 
@@ -2358,32 +2397,19 @@ async function publishMedia() {
       if (typeof showNotification === 'function') showNotification('✅ Успішно опубліковано!');
       
       // Clear form
-      fileInput.value = '';
+      if (urlInput) urlInput.value = '';
       document.getElementById('publish-title').value = '';
       document.getElementById('publish-artist').value = '';
-      coverInput.value = '';
-      
-      // Add to local state if not added already
-      if (typeof swSaveTracksMeta === 'function') {
-        const publicTrackObj = {
-            id: trackId,
-            title: titleInput,
-            artist: artistInput,
-            genre: 'Спільнота',
-            cover: coverUrl,
-            src: audioUrl,
-            is_public: true,
-            liked: false
-        };
-        // It should be fetched again on community load, or we can just navigate there.
-      }
       
       // Go to community section to see it
       if (typeof showSection === 'function') {
         showSection('community', document.getElementById('nav-community'));
       }
+      if (typeof renderCommunityList === 'function') {
+        renderCommunityList();
+      }
     } else {
-      throw new Error('Помилка збереження метаданих');
+      throw new Error('Помилка збереження метаданих. Можливо, підключення до БД розірвано.');
     }
 
   } catch (err) {

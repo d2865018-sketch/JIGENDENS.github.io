@@ -465,25 +465,29 @@
       <!-- PUBLISH SECTION -->
       <section class="section" id="section-publish">
         <div class="section-header">
-          <h1>Опублікувати</h1>
-          <p class="section-subtitle">Завантаж свою музику або відео на платформу</p>
+          <h1>Створити пост</h1>
+          <p class="section-subtitle">Встав посилання на фото, відео або музику</p>
         </div>
         <div class="publish-container" style="background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); max-width: 600px; margin: 0 auto;">
           <div class="publish-field" style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Файл (Аудіо або Відео)</label>
-            <input type="file" id="publish-file" accept="audio/*,video/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Посилання (URL на медіа)</label>
+            <input type="text" id="publish-url" placeholder="https://..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;" />
           </div>
           <div class="publish-field" style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Назва треку/відео</label>
-            <input type="text" id="publish-title" placeholder="Введіть назву..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Опис / Текст поста</label>
+            <textarea id="publish-title" placeholder="Про що цей пост?" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; resize: none; box-sizing: border-box;"></textarea>
           </div>
           <div class="publish-field" style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Виконавець</label>
-            <input type="text" id="publish-artist" placeholder="Введіть виконавця..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Автор (Виконавець)</label>
+            <input type="text" id="publish-artist" placeholder="Твоє ім'я або виконавець..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;" />
           </div>
           <div class="publish-field" style="margin-bottom: 24px;">
-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Обкладинка (опціонально)</label>
-            <input type="file" id="publish-cover" accept="image/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
+            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Тип поста</label>
+            <select id="publish-type" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;">
+              <option value="audio">🎵 Музика</option>
+              <option value="video">🎥 Відео</option>
+              <option value="image">🖼 Фото</option>
+            </select>
           </div>
           <button class="publish-btn" onclick="publishMedia()" style="width: 100%; padding: 14px; border-radius: 8px; background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s;">
             Опублікувати
