@@ -893,10 +893,19 @@ document.head.appendChild(styleEl);
 // ===== SHAKE TO ADD FRIENDS =====
 let shakeHandler = null;
 let shakePollInterval = null;
+let shakeFallbackTimer = null;
+let shakeBusy = false;
+let shakeMyRowId = null;
+
+function shakeEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 async function startShakeForFriend() {
   if (!currentUser) return showNotification('Спочатку увійдіть в акаунт');
-  
+  if (typeof supabaseClient === 'undefined') return showNotification('Немає зв’язку з сервером');
+
+  // iOS вимагає дозвіл на датчики руху (тільки HTTPS)
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     try {
       const permission = await DeviceMotionEvent.requestPermission();
@@ -906,6 +915,9 @@ async function startShakeForFriend() {
       return showNotification('Помилка доступу до сенсора (потрібен HTTPS)');
     }
   }
+
+  cancelShake(true); // скинути попередній стан, якщо був
+  shakeBusy = false;
 
   let overlay = document.getElementById('shake-overlay');
   if (!overlay) {
@@ -917,8 +929,9 @@ async function startShakeForFriend() {
           <div style="font-size:50px; animation:phoneShake 0.5s infinite;">📱</div>
         </div>
         <h2 id="shake-title" style="margin:0 0 10px; font-weight:600;">Трясіть телефон!</h2>
-        <p id="shake-subtitle" style="color:var(--text-muted); text-align:center; max-width:300px; font-size:14px; line-height:1.5;">Потрясіть телефон одночасно з іншою людиною, щоб знайти одне одного.</p>
-        <button onclick="cancelShake()" style="margin-top:30px; padding:12px 24px; background:var(--bg-elevated); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:500;">Скасувати</button>
+        <div id="shake-subtitle" style="color:var(--text-muted); text-align:center; max-width:300px; font-size:14px; line-height:1.5;">Потрясіть телефон одночасно з іншою людиною.</div>
+        <button id="shake-manual-btn" style="display:none; margin-top:20px; padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Шукати без тряски</button>
+        <button id="shake-cancel-btn" style="margin-top:20px; padding:12px 24px; background:var(--bg-elevated); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:500;">Скасувати</button>
       </div>
       <style>
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -926,97 +939,151 @@ async function startShakeForFriend() {
       </style>
     `;
     document.body.appendChild(overlay);
+    document.getElementById('shake-cancel-btn').addEventListener('click', () => cancelShake());
+    document.getElementById('shake-manual-btn').addEventListener('click', () => handleShakeDetected());
   }
-  overlay.style.display = 'flex';
+  overlay.style.display = 'block';
   document.getElementById('shake-title').textContent = 'Трясіть телефон!';
   document.getElementById('shake-subtitle').textContent = 'Потрясіть телефон одночасно з іншою людиною.';
   document.getElementById('shake-radar').style.animation = 'spin 4s linear infinite';
-  
-  let lastUpdate = 0;
-  let lastX = null, lastY = null, lastZ = null;
-  const threshold = 15;
-  
+  document.getElementById('shake-manual-btn').style.display = 'none';
+
+  // Якщо за 4 секунди не прийшло жодної події руху (ПК, заборонено) — даємо кнопку
+  let gotMotion = false;
+  shakeFallbackTimer = setTimeout(() => {
+    if (!gotMotion) {
+      const b = document.getElementById('shake-manual-btn');
+      if (b) b.style.display = 'inline-block';
+    }
+  }, 4000);
+
+  let lastTime = 0;
+  let lastMag = null;
+  let hits = 0;
+  let firstHit = 0;
+
   shakeHandler = (e) => {
     const acc = e.accelerationIncludingGravity;
-    if (!acc) return;
-    const curTime = Date.now();
-    if ((curTime - lastUpdate) > 100) {
-      const diffTime = (curTime - lastUpdate);
-      lastUpdate = curTime;
-      const x = acc.x, y = acc.y, z = acc.z;
-      if (lastX !== null) {
-        const speed = Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000;
-        if (speed > threshold) {
-          window.removeEventListener('devicemotion', shakeHandler);
-          shakeHandler = null;
-          handleShakeDetected();
-        }
+    if (!acc || acc.x == null) return;
+    gotMotion = true;
+    const now = Date.now();
+    if (now - lastTime < 50) return;
+    lastTime = now;
+    const mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+    if (lastMag !== null && Math.abs(mag - lastMag) > 12) {
+      // потрібно кілька різких рухів за ~1.5 сек, щоб не спрацьовувало від випадкового поштовху
+      if (!hits || now - firstHit > 1500) { hits = 0; firstHit = now; }
+      hits++;
+      if (hits >= 3) {
+        hits = 0;
+        handleShakeDetected();
       }
-      lastX = x; lastY = y; lastZ = z;
     }
+    lastMag = mag;
   };
   window.addEventListener('devicemotion', shakeHandler);
 }
 
-function cancelShake() {
+async function shakeRemoveMyRows() {
+  try {
+    if (currentUser && typeof supabaseClient !== 'undefined') {
+      await supabaseClient.from('shakes').delete().eq('user_id', currentUser.id);
+    }
+  } catch (e) { /* не критично */ }
+  shakeMyRowId = null;
+}
+
+function cancelShake(silent) {
   if (shakeHandler) {
     window.removeEventListener('devicemotion', shakeHandler);
     shakeHandler = null;
   }
-  if (shakePollInterval) {
-    clearInterval(shakePollInterval);
-    shakePollInterval = null;
-  }
+  if (shakePollInterval) { clearInterval(shakePollInterval); shakePollInterval = null; }
+  if (shakeFallbackTimer) { clearTimeout(shakeFallbackTimer); shakeFallbackTimer = null; }
   const overlay = document.getElementById('shake-overlay');
   if (overlay) overlay.style.display = 'none';
+  shakeRemoveMyRows();
 }
 
 async function handleShakeDetected() {
-  document.getElementById('shake-title').textContent = 'Шукаємо збіги...';
-  document.getElementById('shake-subtitle').textContent = 'Зачекайте кілька секунд';
-  
+  if (shakeBusy) return;
+  shakeBusy = true;
+  if (shakeHandler) { window.removeEventListener('devicemotion', shakeHandler); shakeHandler = null; }
+  if (shakeFallbackTimer) { clearTimeout(shakeFallbackTimer); shakeFallbackTimer = null; }
+
+  const title = document.getElementById('shake-title');
+  const sub = document.getElementById('shake-subtitle');
+  document.getElementById('shake-manual-btn').style.display = 'none';
+  title.textContent = 'Шукаємо збіги...';
+  sub.textContent = 'Зачекайте кілька секунд';
+
   try {
-    await supabaseClient.from('shakes').insert([{
+    // Прибираємо старі рядки і створюємо новий; час беремо з сервера (created_at),
+    // тому різниця годинників на телефонах не впливає.
+    await supabaseClient.from('shakes').delete().eq('user_id', currentUser.id);
+    const ins = await supabaseClient.from('shakes').insert({
       user_id: currentUser.id,
       user_name: currentUser.name || 'Користувач'
-    }]);
-    
+    }).select().single();
+
+    if (ins.error || !ins.data) throw (ins.error || new Error('insert failed'));
+    const mine = ins.data;
+    shakeMyRowId = mine.id;
+    const myTime = new Date(mine.created_at).getTime();
+
     let attempts = 0;
+    let checking = false;
     shakePollInterval = setInterval(async () => {
-      attempts++;
-      if (attempts > 5) { // ~10 seconds
-        cancelShake();
-        showNotification('Нікого не знайдено 😔 Спробуйте ще раз.');
-        return;
-      }
-      
-      const { data, error } = await supabaseClient
-        .from('shakes')
-        .select('*')
-        .neq('user_id', currentUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-        
-      if (data && data.length > 0) {
-        const match = data[0];
-        const shakeTime = new Date(match.created_at).getTime();
-        // Match must be within last 15 seconds
-        if (Date.now() - shakeTime < 15000) {
+      if (checking) return;
+      checking = true;
+      try {
+        attempts++;
+        if (attempts > 12) { // ~18 сек
+          cancelShake();
+          showNotification('Нікого не знайдено 😔 Спробуйте ще раз.');
+          return;
+        }
+
+        const since = new Date(myTime - 12000).toISOString();
+        const { data, error } = await supabaseClient
+          .from('shakes')
+          .select('*')
+          .neq('user_id', currentUser.id)
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        if (error) throw error;
+
+        if (data && data.length) {
+          // найближчий за часом до мого потрясання
+          data.sort((a, b) => Math.abs(new Date(a.created_at) - myTime) - Math.abs(new Date(b.created_at) - myTime));
+          const match = data[0];
           clearInterval(shakePollInterval);
           shakePollInterval = null;
-          
-          document.getElementById('shake-title').textContent = 'Знайдено!';
-          document.getElementById('shake-subtitle').innerHTML = \`
-            Ви знайшли <b>\${match.user_name || 'Користувача'}</b>!<br><br>
-            <button onclick="cancelShake(); if(typeof msgOpenChat === 'function') msgOpenChat('\${match.user_id}', '\${match.user_name}')" style="padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px; margin-top:15px;">Написати повідомлення</button>
-          \`;
+
+          title.textContent = 'Знайдено!';
+          sub.innerHTML = `Ви знайшли <b>${shakeEsc(match.user_name || 'Користувача')}</b>!<br><br>
+            <button id="shake-chat-btn" style="padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px;">Написати повідомлення</button>`;
           document.getElementById('shake-radar').style.animation = 'none';
+          document.getElementById('shake-chat-btn').addEventListener('click', () => {
+            const uid = match.user_id, nm = match.user_name;
+            cancelShake();
+            if (typeof msgOpenChat === 'function') msgOpenChat(uid, nm);
+          });
+          // свій рядок можна прибрати, але трохи згодом — щоб інший встиг побачити нас
+          setTimeout(shakeRemoveMyRows, 4000);
         }
+      } catch (e) {
+        console.error('[Shake] poll error', e);
+        cancelShake();
+        showNotification('Помилка пошуку. Перевірте, що таблицю shakes створено в Supabase (див. shakes.sql).');
+      } finally {
+        checking = false;
       }
-    }, 2000);
+    }, 1500);
   } catch (e) {
-    console.error(e);
+    console.error('[Shake]', e);
     cancelShake();
-    showNotification('Помилка сервера при пошуку. Створіть таблицю shakes у Supabase.');
+    showNotification('Помилка сервера. Створіть таблицю shakes у Supabase (файл shakes.sql).');
   }
 }
