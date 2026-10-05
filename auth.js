@@ -1063,8 +1063,24 @@ async function handleShakeDetected() {
 
           title.textContent = 'Знайдено!';
           sub.innerHTML = `Ви знайшли <b>${shakeEsc(match.user_name || 'Користувача')}</b>!<br><br>
-            <button id="shake-chat-btn" style="padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px;">Написати повідомлення</button>`;
+            <button id="shake-friend-btn" style="padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px; margin-bottom:8px;">➕ Додати в друзі</button>
+            <button id="shake-profile-btn" style="padding:12px 24px; background:var(--bg-elevated); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px; margin-bottom:8px;">👤 Профіль</button>
+            <button id="shake-chat-btn" style="padding:12px 24px; background:var(--bg-elevated); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px;">✉️ Написати повідомлення</button>`;
           document.getElementById('shake-radar').style.animation = 'none';
+          const fb = document.getElementById('shake-friend-btn');
+          fb.addEventListener('click', async () => {
+            if (typeof pfSendRequest !== 'function') return;
+            fb.disabled = true;
+            if (typeof pfLoad === 'function') await pfLoad();
+            const ok = await pfSendRequest(match.user_id);
+            fb.textContent = ok ? '✅ Готово' : '➕ Додати в друзі';
+            fb.disabled = !!ok;
+          });
+          document.getElementById('shake-profile-btn').addEventListener('click', () => {
+            const uid = match.user_id, nm = match.user_name;
+            cancelShake();
+            if (typeof openUserProfile === 'function') openUserProfile(uid, nm);
+          });
           document.getElementById('shake-chat-btn').addEventListener('click', () => {
             const uid = match.user_id, nm = match.user_name;
             cancelShake();

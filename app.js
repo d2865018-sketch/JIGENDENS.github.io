@@ -1118,6 +1118,7 @@ function showSection(name, el) {
   if (name === 'mp3tag') renderMp3TagList();
   if (name === 'community') { renderCommunityList(); renderCommunityPlaylists(); }
   if (name === 'top-users') renderTopUsers();
+  if (name === 'friends' && typeof pfOnSectionOpen === 'function') pfOnSectionOpen();
   if (name === 'messages' && typeof msgOnSectionOpen === 'function') msgOnSectionOpen();
 }
 

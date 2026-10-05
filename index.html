@@ -17,8 +17,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=9" />
-  <link rel="stylesheet" href="auth.css?v=9" />
+  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="auth.css?v=10" />
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script type="text/javascript">
      (function(){
@@ -94,6 +94,13 @@
           <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
         </svg>
         Спільнота
+      </a>
+      <a href="#" class="nav-item" id="nav-friends" onclick="showSection('friends', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Друзі
+        <span class="nav-badge" id="friends-badge" style="display:none">0</span>
       </a>
       <a href="#" class="nav-item" id="nav-messages" onclick="showSection('messages', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -604,8 +611,8 @@
                 <button class="msg-back" onclick="msgCloseChat()" title="Назад">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <div id="msg-chat-avatar"></div>
-                <div class="msg-chat-title" id="msg-chat-name"></div>
+                <div id="msg-chat-avatar" onclick="msgOpenActiveProfile()" title="Відкрити профіль"></div>
+                <div class="msg-chat-title" id="msg-chat-name" onclick="msgOpenActiveProfile()" title="Відкрити профіль"></div>
               </header>
               <div class="msg-thread" id="msg-thread"></div>
               <div class="msg-compose">
@@ -616,6 +623,25 @@
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- FRIENDS SECTION -->
+      <section class="section" id="section-friends">
+        <div class="section-header">
+          <h1>👥 Друзі</h1>
+          <p class="section-subtitle">Додавай друзів, переглядай профілі та пиши їм</p>
+        </div>
+        <div class="msg-guest" id="friends-guest" style="display:none">
+          <div class="msg-guest-icon">👥</div>
+          <h2>Друзі</h2>
+          <p>Увійди в акаунт, щоб додавати друзів.</p>
+          <button class="msg-write-btn" onclick="openAuth('login')">Увійти</button>
+        </div>
+        <div id="friends-main" style="display:none">
+          <input type="text" id="friends-search" class="msg-search" placeholder="Знайти користувача за іменем..." autocomplete="off" oninput="pfOnSearch(this.value)" />
+          <div id="friends-search-results"></div>
+          <div id="friends-lists"></div>
         </div>
       </section>
 
@@ -1304,10 +1330,11 @@
     </div>
   </div>
 
-  <script src="storage.js?v=9"></script>
-  <script src="app.js?v=9"></script>
-  <script src="auth.js?v=9"></script>
-  <script src="messages.js?v=9"></script>
+  <script src="storage.js?v=10"></script>
+  <script src="app.js?v=10"></script>
+  <script src="auth.js?v=10"></script>
+  <script src="messages.js?v=10"></script>
+  <script src="profiles.js?v=10"></script>
 
   <script>
     // ===== PWA: service worker + кнопка "Встановити" =====

@@ -83,8 +83,13 @@ function msgPreview(m) {
 // Ім'я автора як посилання (для рядків треків)
 function msgOwnerLink(uid, name) {
   const label = `👤 ${msgEsc(name || 'Користувач')}`;
-  if (!uid || (MSG.me && MSG.me.id === uid)) return label;
-  return `<span class="owner-link" title="Написати повідомлення" data-uid="${msgEsc(uid)}" data-name="${msgEsc(name || '')}" onclick="event.stopPropagation(); msgOpenChatFromBtn(this)">${label}</span>`;
+  if (!uid) return label;
+  return `<span class="owner-link" title="Відкрити профіль" data-uid="${msgEsc(uid)}" data-name="${msgEsc(name || '')}" onclick="event.stopPropagation(); msgOpenProfileFromBtn(this)">${label}</span>`;
+}
+
+function msgOpenProfileFromBtn(btn) {
+  if (typeof openUserProfile === 'function') openUserProfile(btn.dataset.uid, btn.dataset.name);
+  else msgOpenChat(btn.dataset.uid, btn.dataset.name);
 }
 
 // Кнопка "✉️ Написати" (не показується для власних публікацій)
@@ -103,13 +108,27 @@ async function msgUpsertProfile(user) {
   try {
     const session = await swGetSession();
     if (!session || !user) return;
-    const avatar = user.customAvatar && /^https?:/i.test(user.customAvatar) ? user.customAvatar : null;
-    await supabaseClient.from('profiles').upsert({
+    const http = (v) => (v && /^https?:/i.test(v)) ? v : null;
+    const base = {
       id: session.user.id,
       name: user.name || 'Користувач',
-      avatar_url: avatar,
+      avatar_url: http(user.customAvatar),
       updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
+    };
+    // Публічні поля профілю (потрібен profiles.sql). Якщо колонок ще немає — зберігаємо хоча б основне.
+    const full = {
+      ...base,
+      bio: user.bio || '',
+      banner_url: http(user.customBanner),
+      fav_genre: user.favGenre || '',
+      top_track: user.topTrack || '',
+      joined_at: session.user.created_at || null
+    };
+    let { error } = await supabaseClient.from('profiles').upsert(full, { onConflict: 'id' });
+    if (error && /bio|banner_url|fav_genre|top_track|joined_at|column/i.test(error.message)) {
+      ({ error } = await supabaseClient.from('profiles').upsert(base, { onConflict: 'id' }));
+    }
+    if (error) console.warn('[Msg] profile upsert failed', error.message);
   } catch (e) {
     console.warn('[Msg] profile upsert failed', e);
   }
