@@ -84,7 +84,7 @@ async function swSaveTracksMeta(email, tracks) {
       file_url: fileUrl,
       cover_url: t.cover,
       is_public: !!t.is_public,
-      owner_name: ownerName
+      owner_name: t.is_anonymous ? 'Анонім' : ownerName
     });
   }
   if (rows.length === 0) {
@@ -138,6 +138,7 @@ function swMapRow(d, genre, forcePublic) {
     is_public: forcePublic || d.is_public || false,
     owner: d.owner_name || null,
     owner_id: d.user_id || null,
+    is_anonymous: d.owner_name === 'Анонім',
     liked: false
   };
 }

@@ -430,6 +430,12 @@ function selectMp3TagTrack(id) {
   mp3tagSelectedTrackId = String(id);
   tempMp3TagCover = track.cover; // keep original by default
   
+  // Play the track so the user knows what they are editing
+  const globalIdx = getTrackGlobalIndex(track);
+  if (globalIdx !== -1) {
+    playTrackByGlobalIndex(globalIdx);
+  }
+  
   // enable editor
   document.getElementById('mp3tag-editor-col').style.opacity = '1';
   document.getElementById('mp3tag-editor-col').style.pointerEvents = 'auto';
@@ -440,6 +446,9 @@ function selectMp3TagTrack(id) {
   
   const publicToggle = document.getElementById('mp3tag-public');
   if (publicToggle) publicToggle.checked = track.is_public || false;
+  
+  const anonToggle = document.getElementById('mp3tag-anonymous');
+  if (anonToggle) anonToggle.checked = track.is_anonymous || false;
   
   renderMp3TagCoverPreview();
   renderMp3TagList(); // refresh active state
@@ -497,6 +506,9 @@ async function saveMp3Tag() {
   
   const publicToggle = document.getElementById('mp3tag-public');
   if (publicToggle) track.is_public = publicToggle.checked;
+  
+  const anonToggle = document.getElementById('mp3tag-anonymous');
+  if (anonToggle) track.is_anonymous = anonToggle.checked;
   
   const saved = await swSaveTracksMeta(currentUser.email, userTracks);
   if (saved) showNotification(track.is_public ? '🌍 Збережено — трек публічний' : '💾 Теги успішно збережено');
@@ -635,7 +647,7 @@ function renderLibraryList() {
 function renderLikedList() {
   const el = document.getElementById('liked-list');
   const empty = document.getElementById('liked-empty');
-  const liked = getAllTracks().filter(t => likedIds.has(t.id));
+  const liked = getAllTracks().filter(t => likedIds.has(t.id) || likedIds.has(String(t.id)) || likedIds.has(Number(t.id)));
   if (liked.length === 0) {
     el.innerHTML = '';
     el.appendChild(empty);
@@ -692,7 +704,7 @@ function trackCardHTML(track, idx) {
 function trackRowHTML(track, displayNum, ctx) {
   const globalIdx = getTrackGlobalIndex(track);
   const playing = currentTrackIndex === globalIdx && isPlaying;
-  const liked = likedIds.has(track.id);
+  const liked = likedIds.has(track.id) || likedIds.has(String(track.id)) || likedIds.has(Number(track.id));
   const isUserTrack = userTracks.some(t => String(t.id) === String(track.id));
   return `
     <div class="track-row ${currentTrackIndex === globalIdx ? 'playing' : ''}" 
@@ -1035,11 +1047,13 @@ function toggleLikeById(id) {
   const allTracks = getAllTracks();
   const track = allTracks.find(t => String(t.id) === String(id));
   if (!track) return;
-  if (likedIds.has(id)) {
+  if (likedIds.has(id) || likedIds.has(String(id)) || likedIds.has(Number(id))) {
     likedIds.delete(id);
+    likedIds.delete(String(id));
+    likedIds.delete(Number(id));
     showNotification(`💔 ${track.title} видалено з вподобаних`);
   } else {
-    likedIds.add(id);
+    likedIds.add(String(id));
     showNotification(`❤️ ${track.title} додано до вподобаних`);
   }
   saveLiked();          // ← persist per account
@@ -1053,7 +1067,7 @@ function updateLikeBtn() {
   if (currentTrackIndex < 0) return;
   const track = getTrackAtIndex(currentTrackIndex);
   if (!track) return;
-  const liked = likedIds.has(track.id);
+  const liked = likedIds.has(track.id) || likedIds.has(String(track.id)) || likedIds.has(Number(track.id));
   btn.classList.toggle('liked', liked);
 }
 
@@ -1103,6 +1117,7 @@ function showSection(name, el) {
   if (name === 'extractor') renderExtSavedList();
   if (name === 'mp3tag') renderMp3TagList();
   if (name === 'community') { renderCommunityList(); renderCommunityPlaylists(); }
+  if (name === 'top-users') renderTopUsers();
   if (name === 'messages' && typeof msgOnSectionOpen === 'function') msgOnSectionOpen();
 }
 
@@ -1135,6 +1150,54 @@ async function renderCommunityList() {
   container.innerHTML = publicTracks
     .map((track, i) => trackRowHTML(track, i, 'community'))
     .join('');
+}
+
+async function renderTopUsers() {
+  const container = document.getElementById('top-users-list');
+  if (!container) return;
+  container.innerHTML = '<div class="empty-state" style="text-align:center; padding:40px; color:var(--text-muted);"><div class="spinner"></div> Завантаження...</div>';
+
+  let publicTracks = [];
+  if (typeof swLoadPublicTracks === 'function') {
+    publicTracks = await swLoadPublicTracks();
+  }
+
+  if (publicTracks.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span>🏆</span>
+        <p>Поки що немає даних для топу користувачів.</p>
+      </div>`;
+    return;
+  }
+
+  const userStats = {};
+  publicTracks.forEach(track => {
+    if (track.owner_id) {
+      if (!userStats[track.owner_id]) {
+        userStats[track.owner_id] = { id: track.owner_id, name: track.owner || 'Користувач', count: 0 };
+      }
+      userStats[track.owner_id].count += 1;
+    }
+  });
+
+  const topUsers = Object.values(userStats).sort((a, b) => b.count - a.count);
+
+  container.innerHTML = topUsers.map((user, i) => `
+    <div class="track-row" style="cursor: default;">
+      <div style="position:relative; width:40px; display:flex; align-items:center; justify-content:center;">
+        <span class="track-row-num" style="font-size: 16px; font-weight: bold; color: ${i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : 'var(--text-secondary)'))};">${i + 1}</span>
+      </div>
+      <div class="track-row-cover" style="border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-elevated); width: 40px; height: 40px;">
+        <span style="font-size: 18px; color: white; font-weight: 600;">${user.name.charAt(0).toUpperCase()}</span>
+      </div>
+      <div class="track-row-info">
+        <div class="track-row-title">${escapeHtml(user.name)}</div>
+        <div class="track-row-artist">${user.count} треків ${i === 0 ? '🏆' : ''}</div>
+      </div>
+      ${typeof msgOwnerLink === 'function' ? msgOwnerLink(user.id, user.name) : ''}
+    </div>
+  `).join('');
 }
 
 function toggleSidebar() {
@@ -1519,7 +1582,7 @@ function renderPlaylistTracks(pl) {
 function playlistTrackRowHTML(track, displayNum, plId) {
   const globalIdx = getTrackGlobalIndex(track);
   const playing = currentTrackIndex === globalIdx && isPlaying;
-  const liked = likedIds.has(track.id);
+  const liked = likedIds.has(track.id) || likedIds.has(String(track.id)) || likedIds.has(Number(track.id));
   return `
     <div class="track-row ${currentTrackIndex === globalIdx ? 'playing' : ''}"
          onclick="playTrackByGlobalIndex(${globalIdx})"
@@ -2530,7 +2593,10 @@ async function publishMedia() {
     ext = 'jpg';
   }
 
-  const res = await swPublishMedia({ kind, caption, blob, ext }, currentUser.name);
+  const isAnon = document.getElementById('media-anonymous').checked;
+  const ownerName = isAnon ? 'Анонім' : currentUser.name;
+
+  const res = await swPublishMedia({ kind, caption, blob, ext }, ownerName);
   if (btn) btn.disabled = false;
   if (!res.ok) return;
 
@@ -2538,6 +2604,8 @@ async function publishMedia() {
   document.getElementById('media-file').value = '';
   document.getElementById('media-caption').value = '';
   document.getElementById('media-file-name').textContent = '';
+  const anonCb = document.getElementById('media-anonymous');
+  if (anonCb) anonCb.checked = false;
   showNotification('✅ Опубліковано!');
   renderCommunityMedia();
 }
@@ -2603,3 +2671,23 @@ document.addEventListener('error', (e) => {
   for (const ch of String(img.alt || img.src).slice(0, 40)) h = (h + ch.charCodeAt(0)) % 9973;
   img.src = COVERS[h % COVERS.length];
 }, true);
+
+// Pre-load public tracks globally so they appear in liked list / trending on init
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof swLoadPublicTracks === 'function') {
+    try {
+      const pTracks = await swLoadPublicTracks();
+      if (pTracks && pTracks.length) {
+        pTracks.forEach((track) => {
+          const isMine = userTracks.some(t => String(t.id) === String(track.id));
+          const inGlobal = tracks.some(t => String(t.id) === String(track.id));
+          if (!isMine && !inGlobal) tracks.push(track);
+        });
+        if (typeof renderLikedList === 'function' && currentSection === 'liked') renderLikedList();
+        if (typeof renderTrendingGrid === 'function' && currentSection === 'home') renderTrendingGrid();
+      }
+    } catch (e) {
+      console.warn('[app.js] Preload public tracks failed', e);
+    }
+  }
+});

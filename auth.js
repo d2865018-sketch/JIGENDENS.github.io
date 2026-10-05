@@ -25,6 +25,21 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSession();
   setupPasswordStrength();
   setupOverlayClose();
+  
+  // Profile Modal Tabs Logic
+  document.querySelectorAll('.profile-sidebar-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.profile-sidebar-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.profile-widget-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.profile-widget-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
 });
 
 // ===== SESSION =====
@@ -33,10 +48,16 @@ async function checkSession() {
   if (session && session.user) {
     const u = session.user;
     const userData = {
+      id: u.id,
       email: u.email,
       name: u.user_metadata?.name || 'Користувач',
       avatarIdx: u.user_metadata?.avatarIdx || 0,
-      customAvatar: u.user_metadata?.customAvatar || null
+      customAvatar: u.user_metadata?.customAvatar || null,
+      customBanner: u.user_metadata?.customBanner || null,
+      bio: u.user_metadata?.bio || '',
+      favGenre: u.user_metadata?.favGenre || '',
+      topTrack: u.user_metadata?.topTrack || '',
+      created_at: u.created_at
     };
     loginSuccess(userData, false);
   } else {
@@ -249,10 +270,16 @@ async function handleLogin(e) {
 
   const u = data.user;
   const userData = {
+    id: u.id,
     email: u.email,
     name: u.user_metadata?.name || 'Користувач',
     avatarIdx: u.user_metadata?.avatarIdx || 0,
-    customAvatar: u.user_metadata?.customAvatar || null
+    customAvatar: u.user_metadata?.customAvatar || null,
+    customBanner: u.user_metadata?.customBanner || null,
+    bio: u.user_metadata?.bio || '',
+    favGenre: u.user_metadata?.favGenre || '',
+    topTrack: u.user_metadata?.topTrack || '',
+    created_at: u.created_at
   };
 
   showSuccess('form-login', `З поверненням! 🎵`);
@@ -469,18 +496,51 @@ document.addEventListener('click', e => {
 
 // ===== PROFILE EDIT =====
 let tempAvatarBase64 = null;
+let tempBannerBase64 = null;
 
 function openProfileEdit() {
   closeDropdown();
   if (!currentUser) return;
   
   const nameInput = document.getElementById('profile-name-input');
-  const avatarEl = document.getElementById('profile-edit-avatar');
+  if (nameInput) nameInput.value = currentUser.name || '';
   
-  if (nameInput) nameInput.value = currentUser.name;
+  const bioInput = document.getElementById('profile-bio-input');
+  if (bioInput) bioInput.value = currentUser.bio || '';
+  
+  const favGenreInput = document.getElementById('profile-fav-genre-input');
+  if (favGenreInput) favGenreInput.value = currentUser.favGenre || '';
+  
+  const topTrackSelect = document.getElementById('profile-top-track-select');
+  if (topTrackSelect) {
+    topTrackSelect.innerHTML = '<option value="">Не вибрано</option>';
+    if (typeof getAllTracks === 'function' && typeof likedIds !== 'undefined') {
+      const all = getAllTracks();
+      const liked = all.filter(t => likedIds.has(t.id) || likedIds.has(String(t.id)) || likedIds.has(Number(t.id)));
+      liked.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = String(t.id);
+        opt.textContent = `${t.artist} - ${t.title}`;
+        if (currentUser.topTrack === String(t.id)) opt.selected = true;
+        topTrackSelect.appendChild(opt);
+      });
+    }
+    if (typeof updateProfileTopTrackPreview === 'function') {
+      updateProfileTopTrackPreview();
+    }
+  }
+  
+  const joinedEl = document.getElementById('profile-joined-date');
+  if (joinedEl && currentUser.created_at) {
+    const d = new Date(currentUser.created_at);
+    joinedEl.textContent = `У числі учасників з ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }
   
   tempAvatarBase64 = currentUser.customAvatar || null;
+  tempBannerBase64 = currentUser.customBanner || null;
+  
   updateProfileModalAvatar();
+  updateProfileModalBanner();
   
   document.getElementById('profile-edit-overlay').classList.add('open');
 }
@@ -488,14 +548,15 @@ function openProfileEdit() {
 function closeProfileEdit() {
   document.getElementById('profile-edit-overlay').classList.remove('open');
   tempAvatarBase64 = null;
+  tempBannerBase64 = null;
   document.getElementById('profile-avatar-file').value = '';
+  document.getElementById('profile-banner-file').value = '';
 }
 
 function handleAvatarUpload(input) {
   const file = input.files[0];
   if (!file) return;
 
-  // Стискаємо до 256x256 JPEG, щоб не роздувати дані профілю
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
@@ -515,24 +576,51 @@ function handleAvatarUpload(input) {
   reader.readAsDataURL(file);
 }
 
-// Завантажує аватар у Supabase Storage і повертає публічний URL.
-// У метадані акаунта (а отже і в JWT) йде лише короткий URL.
-async function uploadAvatarToStorage(dataUrl) {
+function handleBannerUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800; canvas.height = 280;
+      const ctx = canvas.getContext('2d');
+      const ratio = Math.max(800 / img.width, 280 / img.height);
+      const w = img.width * ratio, h = img.height * ratio;
+      ctx.drawImage(img, (800 - w) / 2, (280 - h) / 2, w, h);
+      tempBannerBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      updateProfileModalBanner();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadImageToStorage(dataUrl, filename) {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return null;
     const blob = await (await fetch(dataUrl)).blob();
-    const path = `${session.user.id}/avatar.jpg`;
+    const path = `${session.user.id}/${filename}`;
     const { error } = await supabaseClient.storage
       .from('music')
       .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (error) { console.warn('[Avatar]', error.message); return null; }
+    if (error) return null;
     const { data } = supabaseClient.storage.from('music').getPublicUrl(path);
     return data.publicUrl + '?v=' + Date.now();
   } catch (e) {
-    console.warn('[Avatar] upload failed', e);
     return null;
   }
+}
+
+async function uploadAvatarToStorage(dataUrl) {
+  return uploadImageToStorage(dataUrl, 'avatar.jpg');
+}
+
+async function uploadBannerToStorage(dataUrl) {
+  return uploadImageToStorage(dataUrl, 'banner.jpg');
 }
 
 function updateProfileModalAvatar() {
@@ -540,12 +628,24 @@ function updateProfileModalAvatar() {
   if (!avatarEl) return;
   
   if (tempAvatarBase64) {
-    avatarEl.innerHTML = `<img src="${tempAvatarBase64}" style="width:100%; height:100%; object-fit:cover;" />`;
-    avatarEl.style.background = 'transparent';
+    avatarEl.innerHTML = ``;
+    avatarEl.style.backgroundImage = `url('${tempAvatarBase64}')`;
+    avatarEl.style.backgroundColor = 'transparent';
   } else {
     const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     avatarEl.innerHTML = initials;
-    avatarEl.style.background = AVATAR_GRADIENTS[currentUser.avatarIdx || 0];
+    avatarEl.style.backgroundImage = 'none';
+    avatarEl.style.backgroundColor = AVATAR_GRADIENTS[currentUser.avatarIdx || 0];
+  }
+}
+
+function updateProfileModalBanner() {
+  const bannerEl = document.getElementById('profile-card-banner');
+  if (!bannerEl) return;
+  if (tempBannerBase64) {
+    bannerEl.style.backgroundImage = `url('${tempBannerBase64}')`;
+  } else {
+    bannerEl.style.backgroundImage = 'none';
   }
 }
 
@@ -553,7 +653,14 @@ async function saveProfileEdit() {
   if (!currentUser) return;
   
   const nameInput = document.getElementById('profile-name-input');
+  const bioInput = document.getElementById('profile-bio-input');
+  const favGenreInput = document.getElementById('profile-fav-genre-input');
+  const topTrackInput = document.getElementById('profile-top-track-select');
+  
   const newName = nameInput.value.trim();
+  const newBio = bioInput ? bioInput.value.trim() : '';
+  const newFavGenre = favGenreInput ? favGenreInput.value.trim() : '';
+  const newTopTrack = topTrackInput ? topTrackInput.value.trim() : '';
   
   if (newName.length < 2) {
     nameInput.style.borderColor = '#e05574';
@@ -561,26 +668,37 @@ async function saveProfileEdit() {
     return;
   }
   
-  // base64-картинку не зберігаємо в метаданих (вона потрапляє в JWT і ламає запити)
+  const btn = document.querySelector('.profile-save-btn');
+  if (btn) btn.textContent = 'Збереження...';
+  
   let avatarValue = tempAvatarBase64;
   if (avatarValue && avatarValue.startsWith('data:')) {
     avatarValue = await uploadAvatarToStorage(avatarValue);
-    if (!avatarValue) {
-      if (typeof showNotification === 'function') showNotification('❌ Не вдалося завантажити аватар');
-      return;
-    }
+  }
+  
+  let bannerValue = tempBannerBase64;
+  if (bannerValue && bannerValue.startsWith('data:')) {
+    bannerValue = await uploadBannerToStorage(bannerValue);
   }
 
   const { data, error } = await supabaseClient.auth.updateUser({
     data: {
       name: newName,
-      customAvatar: avatarValue
+      bio: newBio,
+      favGenre: newFavGenre,
+      topTrack: newTopTrack,
+      customAvatar: avatarValue,
+      customBanner: bannerValue
     }
   });
 
   if (!error) {
     currentUser.name = newName;
+    currentUser.bio = newBio;
+    currentUser.favGenre = newFavGenre;
+    currentUser.topTrack = newTopTrack;
     currentUser.customAvatar = avatarValue;
+    currentUser.customBanner = bannerValue;
     if (typeof msgUpsertProfile === 'function') msgUpsertProfile(currentUser);
     updateTopbarLoggedIn(currentUser);
     if (typeof showNotification === 'function') {
@@ -588,7 +706,58 @@ async function saveProfileEdit() {
     }
   }
   
+  if (btn) btn.textContent = 'Зберегти зміни';
   closeProfileEdit();
+}
+
+function playProfileTopTrack() {
+  const select = document.getElementById('profile-top-track-select');
+  if (!select || !select.value) return;
+  const trackId = select.value;
+  if (typeof getAllTracks === 'function') {
+    const all = getAllTracks();
+    const idx = all.findIndex(t => String(t.id) === trackId);
+    if (idx !== -1) {
+      if (typeof currentTrackIndex !== 'undefined' && currentTrackIndex === idx) {
+        if (typeof togglePlay === 'function') togglePlay();
+      } else if (typeof playTrackByGlobalIndex === 'function') {
+        playTrackByGlobalIndex(idx);
+        // Turn on repeat so the track loops
+        const repeatBtn = document.getElementById('repeat-btn');
+        if (repeatBtn && !repeatBtn.classList.contains('active')) {
+          if (typeof toggleRepeat === 'function') toggleRepeat();
+        }
+      }
+    }
+  }
+}
+
+function updateProfileTopTrackPreview() {
+  const select = document.getElementById('profile-top-track-select');
+  const preview = document.getElementById('profile-top-track-preview');
+  const img = document.getElementById('profile-top-track-img');
+  const title = document.getElementById('profile-top-track-title');
+  const artist = document.getElementById('profile-top-track-artist');
+  
+  if (!select || !preview) return;
+  
+  const trackId = select.value;
+  if (!trackId) {
+    preview.style.display = 'none';
+    return;
+  }
+  
+  if (typeof getAllTracks === 'function') {
+    const track = getAllTracks().find(t => String(t.id) === trackId);
+    if (track) {
+      preview.style.display = 'flex';
+      img.src = track.cover || 'assets/default-cover.png';
+      title.textContent = track.title || 'Невідомий трек';
+      artist.textContent = track.artist || 'Невідомий виконавець';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
 }
 
 // ===== PASSWORD VISIBILITY =====
@@ -720,3 +889,134 @@ styleEl.textContent = `
   }
 `;
 document.head.appendChild(styleEl);
+
+// ===== SHAKE TO ADD FRIENDS =====
+let shakeHandler = null;
+let shakePollInterval = null;
+
+async function startShakeForFriend() {
+  if (!currentUser) return showNotification('Спочатку увійдіть в акаунт');
+  
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const permission = await DeviceMotionEvent.requestPermission();
+      if (permission !== 'granted') return showNotification('Немає доступу до сенсора руху');
+    } catch (e) {
+      console.warn(e);
+      return showNotification('Помилка доступу до сенсора (потрібен HTTPS)');
+    }
+  }
+
+  let overlay = document.getElementById('shake-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'shake-overlay';
+    overlay.innerHTML = `
+      <div style="position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; backdrop-filter:blur(5px);">
+        <div id="shake-radar" style="width:120px; height:120px; border-radius:50%; border:3px dashed var(--accent); display:flex; align-items:center; justify-content:center; animation:spin 4s linear infinite; margin-bottom:20px;">
+          <div style="font-size:50px; animation:phoneShake 0.5s infinite;">📱</div>
+        </div>
+        <h2 id="shake-title" style="margin:0 0 10px; font-weight:600;">Трясіть телефон!</h2>
+        <p id="shake-subtitle" style="color:var(--text-muted); text-align:center; max-width:300px; font-size:14px; line-height:1.5;">Потрясіть телефон одночасно з іншою людиною, щоб знайти одне одного.</p>
+        <button onclick="cancelShake()" style="margin-top:30px; padding:12px 24px; background:var(--bg-elevated); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:500;">Скасувати</button>
+      </div>
+      <style>
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes phoneShake { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+      </style>
+    `;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  document.getElementById('shake-title').textContent = 'Трясіть телефон!';
+  document.getElementById('shake-subtitle').textContent = 'Потрясіть телефон одночасно з іншою людиною.';
+  document.getElementById('shake-radar').style.animation = 'spin 4s linear infinite';
+  
+  let lastUpdate = 0;
+  let lastX = null, lastY = null, lastZ = null;
+  const threshold = 15;
+  
+  shakeHandler = (e) => {
+    const acc = e.accelerationIncludingGravity;
+    if (!acc) return;
+    const curTime = Date.now();
+    if ((curTime - lastUpdate) > 100) {
+      const diffTime = (curTime - lastUpdate);
+      lastUpdate = curTime;
+      const x = acc.x, y = acc.y, z = acc.z;
+      if (lastX !== null) {
+        const speed = Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000;
+        if (speed > threshold) {
+          window.removeEventListener('devicemotion', shakeHandler);
+          shakeHandler = null;
+          handleShakeDetected();
+        }
+      }
+      lastX = x; lastY = y; lastZ = z;
+    }
+  };
+  window.addEventListener('devicemotion', shakeHandler);
+}
+
+function cancelShake() {
+  if (shakeHandler) {
+    window.removeEventListener('devicemotion', shakeHandler);
+    shakeHandler = null;
+  }
+  if (shakePollInterval) {
+    clearInterval(shakePollInterval);
+    shakePollInterval = null;
+  }
+  const overlay = document.getElementById('shake-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function handleShakeDetected() {
+  document.getElementById('shake-title').textContent = 'Шукаємо збіги...';
+  document.getElementById('shake-subtitle').textContent = 'Зачекайте кілька секунд';
+  
+  try {
+    await supabaseClient.from('shakes').insert([{
+      user_id: currentUser.id,
+      user_name: currentUser.name || 'Користувач'
+    }]);
+    
+    let attempts = 0;
+    shakePollInterval = setInterval(async () => {
+      attempts++;
+      if (attempts > 5) { // ~10 seconds
+        cancelShake();
+        showNotification('Нікого не знайдено 😔 Спробуйте ще раз.');
+        return;
+      }
+      
+      const { data, error } = await supabaseClient
+        .from('shakes')
+        .select('*')
+        .neq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (data && data.length > 0) {
+        const match = data[0];
+        const shakeTime = new Date(match.created_at).getTime();
+        // Match must be within last 15 seconds
+        if (Date.now() - shakeTime < 15000) {
+          clearInterval(shakePollInterval);
+          shakePollInterval = null;
+          
+          document.getElementById('shake-title').textContent = 'Знайдено!';
+          document.getElementById('shake-subtitle').innerHTML = \`
+            Ви знайшли <b>\${match.user_name || 'Користувача'}</b>!<br><br>
+            <button onclick="cancelShake(); if(typeof msgOpenChat === 'function') msgOpenChat('\${match.user_id}', '\${match.user_name}')" style="padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; width:100%; font-weight:600; font-size:15px; margin-top:15px;">Написати повідомлення</button>
+          \`;
+          document.getElementById('shake-radar').style.animation = 'none';
+        }
+      }
+    }, 2000);
+  } catch (e) {
+    console.error(e);
+    cancelShake();
+    showNotification('Помилка сервера при пошуку. Створіть таблицю shakes у Supabase.');
+  }
+}
