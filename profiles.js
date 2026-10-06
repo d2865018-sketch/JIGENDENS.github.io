@@ -390,12 +390,13 @@ function pfRefreshUI() {
 
 function pfUserRow(p, uid, actionsHTML) {
   const name = p.name || 'Користувач';
+  const displayId = p.custom_id ? p.custom_id : uid.substring(0,8);
   return `
     <div class="pf-row">
       <div class="pf-row-main" data-pf-act="profile" data-uid="${pfEsc(uid)}" data-name="${pfEsc(name)}">
         ${pfAvatar({ ...p, id: uid }, 46)}
         <div class="pf-row-info">
-          <div class="pf-row-name">${pfEsc(name)}</div>
+          <div class="pf-row-name">${pfEsc(name)} <span style="font-size:11px; color:var(--text-muted); font-family:monospace; font-weight:normal; margin-left:4px;">@${pfEsc(displayId)}</span></div>
           <div class="pf-row-sub">${p.bio ? pfEsc(p.bio) : 'Відкрити профіль'}</div>
         </div>
       </div>
@@ -466,11 +467,22 @@ async function pfRunSearch(value) {
   if (q.length < 2) { PF.searchResults = null; box.innerHTML = ''; return; }
   box.innerHTML = '<div class="pf-empty">Пошук...</div>';
   try {
-    const { data, error } = await supabaseClient
-      .from('profiles').select('*')
-      .ilike('name', `%${q}%`)
-      .neq('id', pfMe())
-      .limit(12);
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
+    
+    let queryReq;
+    if (isUUID) {
+      queryReq = supabaseClient.from('profiles').select('*').neq('id', pfMe()).eq('id', q).limit(12);
+    } else {
+      queryReq = supabaseClient.from('profiles').select('*').neq('id', pfMe()).or(`name.ilike.%${q}%,custom_id.ilike.%${q}%`).limit(12);
+    }
+
+    let { data, error } = await queryReq;
+    
+    if (error && error.message.includes('custom_id')) {
+      // Fallback if custom_id column doesn't exist yet
+      ({ data, error } = await supabaseClient.from('profiles').select('*').neq('id', pfMe()).ilike('name', `%${q}%`).limit(12));
+    }
+
     if (seq !== PF.searchSeq) return;
     if (error) { box.innerHTML = `<div class="pf-empty">Помилка пошуку: ${pfEsc(error.message)}</div>`; return; }
     (data || []).forEach(p => { PF.profiles[p.id] = p; });

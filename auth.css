@@ -913,3 +913,62 @@
   color: #dbdee1;
 }
 
+
+/* Mobile optimization for Profile Modal */
+@media (max-width: 900px) {
+  .profile-modal-full {
+    flex-direction: column;
+    height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  .profile-modal-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #1e1f22;
+    padding: 16px 12px 8px;
+    flex-shrink: 0;
+  }
+  .profile-sidebar-title {
+    display: none;
+  }
+  .profile-sidebar-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 8px;
+  }
+  .profile-sidebar-menu::-webkit-scrollbar {
+    height: 4px;
+  }
+  .profile-sidebar-menu::-webkit-scrollbar-thumb {
+    background: #3f4147;
+    border-radius: 4px;
+  }
+  .profile-sidebar-item {
+    white-space: nowrap;
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+
+  .profile-modal-content {
+    width: 100%;
+    padding: 20px 16px;
+    flex: none;
+    overflow-y: visible;
+  }
+  
+  .profile-modal-widgets {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #1e1f22;
+    padding: 20px 16px;
+    flex-shrink: 0;
+  }
+  
+  .profile-card {
+    width: 100%;
+    max-width: 360px;
+  }
+}

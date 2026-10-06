@@ -163,6 +163,8 @@ async function handleRegister(e) {
   if (password.length < 6) return showError(errEl, 'Пароль повинен містити мінімум 6 символів');
   if (password !== password2) return showError(errEl, 'Паролі не співпадають');
 
+  if (typeof requestNativeNotifications === 'function') requestNativeNotifications();
+
   btn.classList.add('loading');
   const { data, error } = await supabaseClient.auth.signUp({
     email,
@@ -254,6 +256,8 @@ async function handleLogin(e) {
 
   clearErrors();
   if (!email || !password) return showError(errEl, 'Заповни всі поля');
+
+  if (typeof requestNativeNotifications === 'function') requestNativeNotifications();
 
   btn.classList.add('loading');
   const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -536,6 +540,11 @@ function openProfileEdit() {
     joinedEl.textContent = `У числі учасників з ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`;
   }
   
+  const customIdInput = document.getElementById('profile-custom-id-input');
+  if (customIdInput) {
+    customIdInput.value = currentUser.customId || '';
+  }
+  
   tempAvatarBase64 = currentUser.customAvatar || null;
   tempBannerBase64 = currentUser.customBanner || null;
   
@@ -656,11 +665,13 @@ async function saveProfileEdit() {
   const bioInput = document.getElementById('profile-bio-input');
   const favGenreInput = document.getElementById('profile-fav-genre-input');
   const topTrackInput = document.getElementById('profile-top-track-select');
+  const customIdInput = document.getElementById('profile-custom-id-input');
   
   const newName = nameInput.value.trim();
   const newBio = bioInput ? bioInput.value.trim() : '';
   const newFavGenre = favGenreInput ? favGenreInput.value.trim() : '';
   const newTopTrack = topTrackInput ? topTrackInput.value.trim() : '';
+  let newCustomId = customIdInput ? customIdInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') : '';
   
   if (newName.length < 2) {
     nameInput.style.borderColor = '#e05574';
@@ -688,7 +699,8 @@ async function saveProfileEdit() {
       favGenre: newFavGenre,
       topTrack: newTopTrack,
       customAvatar: avatarValue,
-      customBanner: bannerValue
+      customBanner: bannerValue,
+      customId: newCustomId
     }
   });
 
@@ -1103,3 +1115,17 @@ async function handleShakeDetected() {
     showNotification('Помилка сервера. Створіть таблицю shakes у Supabase (файл shakes.sql).');
   }
 }
+
+window.copyMyId = function() {
+  if (!currentUser) return;
+  navigator.clipboard.writeText(currentUser.id).then(() => {
+    if (typeof showToast === "function") {
+      showToast("Твій унікальний ID скопійовано! Надішли його другу для пошуку.");
+    } else {
+      alert("Твій ID скопійовано: " + currentUser.id);
+    }
+  }).catch(err => {
+    console.error("Помилка копіювання:", err);
+  });
+};
+

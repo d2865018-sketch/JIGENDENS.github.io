@@ -1101,17 +1101,29 @@ function updateQueueList() {
 
 // ===== NAVIGATION =====
 function showSection(name, el) {
+  if (name === 'liked') {
+    name = 'library';
+    el = document.getElementById('nav-library');
+    setTimeout(() => switchLibTab('liked'), 0);
+  }
+
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById(`section-${name}`).classList.add('active');
+  
+  const sectionEl = document.getElementById(`section-${name}`);
+  if (sectionEl) sectionEl.classList.add('active');
   if (el) el.classList.add('active');
   currentSection = name;
 
   // Close mobile sidebar
-  document.getElementById('sidebar').classList.remove('open');
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('open');
 
-  if (name === 'library') renderLibraryList();
-  if (name === 'liked') renderLikedList();
+  if (name === 'library') {
+    if (!el || el.id === 'nav-library') {
+      switchLibTab('my');
+    }
+  }
   if (name === 'home') renderTrendingGrid();
   if (name === 'explore') renderExploreList(currentGenreFilter);
   if (name === 'extractor') renderExtSavedList();
@@ -1120,6 +1132,54 @@ function showSection(name, el) {
   if (name === 'top-users') renderTopUsers();
   if (name === 'friends' && typeof pfOnSectionOpen === 'function') pfOnSectionOpen();
   if (name === 'messages' && typeof msgOnSectionOpen === 'function') msgOnSectionOpen();
+}
+
+function switchLibTab(tab) {
+  const tabMy = document.getElementById('lib-tab-my');
+  const tabLiked = document.getElementById('lib-tab-liked');
+  const tabPlaylists = document.getElementById('lib-tab-playlists');
+  
+  if (tabMy) tabMy.classList.toggle('active', tab === 'my');
+  if (tabLiked) tabLiked.classList.toggle('active', tab === 'liked');
+  if (tabPlaylists) tabPlaylists.classList.toggle('active', tab === 'playlists');
+  
+  const panelMy = document.getElementById('library-my-panel');
+  const panelLiked = document.getElementById('library-liked-panel');
+  const panelPlaylists = document.getElementById('library-playlists-panel');
+  
+  if (panelMy) panelMy.style.display = tab === 'my' ? 'block' : 'none';
+  if (panelLiked) panelLiked.style.display = tab === 'liked' ? 'block' : 'none';
+  if (panelPlaylists) panelPlaylists.style.display = tab === 'playlists' ? 'block' : 'none';
+  
+  if (tab === 'my') renderLibraryList();
+  if (tab === 'liked') renderLikedList();
+  if (tab === 'playlists') renderLibraryPlaylistsGrid();
+}
+
+function renderLibraryPlaylistsGrid() {
+  const el = document.getElementById('library-playlists-grid');
+  if (!el) return;
+
+  if (playlists.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <span>📂</span>
+        <p>У тебе ще немає плейлистів. Натисни + у лівому меню щоб створити.</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = playlists.map(pl => {
+    const covers = getPlaylistCovers(pl, 4);
+    const thumbHTML = buildThumbHTML(covers, pl.gradient, 'comm-pl-cover', pl.customCover);
+    
+    return `
+      <div class="comm-pl-card" onclick="openPlaylistView('${pl.id}')" style="padding:0; overflow:hidden;">
+        <div style="padding: 12px 12px 0;">${thumbHTML}</div>
+        <div class="comm-pl-name" style="padding: 4px 12px 0; font-weight: 600;">${escapeHtml(pl.name)}</div>
+        <div class="comm-pl-count" style="padding: 4px 12px 12px; font-size: 13px; color: var(--text-muted);">${pl.trackIds.length} ${trackWord(pl.trackIds.length)}</div>
+      </div>`;
+  }).join('');
 }
 
 async function renderCommunityList() {
@@ -1865,7 +1925,36 @@ function showNotification(msg) {
   el.classList.add('show');
   clearTimeout(notifTimer);
   notifTimer = setTimeout(() => el.classList.remove('show'), 3000);
+
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      if (/💬|👥|❤️|Запит|Новий/i.test(msg)) {
+        try {
+          new Notification('Jigendens', { body: msg });
+        } catch (e) {}
+      }
+    }
+  }
 }
+
+window.requestNativeNotifications = function() {
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      showNotification('✅ Push-сповіщення вже увімкнені');
+      return;
+    }
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        showNotification('✅ Push-сповіщення успішно увімкнено!');
+        new Notification('Jigendens', { body: 'Тепер ви отримуватимете сповіщення про повідомлення!' });
+      } else {
+        showNotification('❌ Ви відхилили дозвіл на сповіщення');
+      }
+    });
+  } else {
+    showNotification('⚠️ Ваш браузер не підтримує push-сповіщення');
+  }
+};
 
 function formatTime(secs) {
   if (!secs || isNaN(secs)) return '0:00';
@@ -2481,7 +2570,7 @@ async function renderCommunityPlaylists() {
       : `<div style="width:100%;height:100%;background:${p.gradient || 'var(--bg-elevated)'}"></div>`;
     return `
       <div class="comm-pl-card" onclick="openCommunityPlaylist('${p.id}')">
-        <div class="comm-pl-cover">${coverHTML}</div>
+        <div class="comm-pl-cover single">${coverHTML}</div>
         <div class="comm-pl-name">${escapeHtml(p.name)}</div>
         <div class="comm-pl-owner">👤 ${escapeHtml(p.owner_name || 'Користувач')}</div>
         <div class="comm-pl-count">${list.length} ${trackWord(list.length)}</div>

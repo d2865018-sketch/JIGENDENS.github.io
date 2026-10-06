@@ -69,12 +69,7 @@
         </svg>
         Бібліотека
       </a>
-      <a href="#" class="nav-item" id="nav-liked" onclick="showSection('liked', this)">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        Вподобані
-      </a>
+      <div class="sidebar-section-title">Редактор</div>
       <a href="#" class="nav-item" id="nav-extractor" onclick="showSection('extractor', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.9L15 14"/>
@@ -89,6 +84,7 @@
         </svg>
         MP3Tag Редактор
       </a>
+      <div class="sidebar-section-title">Спільнота</div>
       <a href="#" class="nav-item" id="nav-community" onclick="showSection('community', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
@@ -235,37 +231,54 @@
           <h1>Моя бібліотека</h1>
           <p class="section-subtitle">Твої треки та завантажені файли</p>
         </div>
-        <div class="upload-zone" id="upload-zone">
-          <div class="upload-zone-inner" id="upload-drop-zone">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
-              <polyline points="16 16 12 12 8 16"/>
-              <line x1="12" y1="12" x2="12" y2="21"/>
-              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-            </svg>
-            <p>Перетягни аудіофайли сюди</p>
-            <span>або</span>
-            <button onclick="document.getElementById('file-upload').click()">Вибрати файли</button>
-          </div>
-        </div>
-        <div class="tracks-list-full" id="library-list">
-          <div class="empty-state" id="library-empty">
-            <span>🎵</span>
-            <p>Тут поки нічого немає. Завантаж свою музику!</p>
-          </div>
-        </div>
-      </section>
 
-      <!-- LIKED SECTION -->
-      <section class="section" id="section-liked">
-        <div class="section-header">
-          <h1>Вподобані треки</h1>
-          <p class="section-subtitle">Твої улюблені</p>
+        <div class="comm-tabs" style="margin-bottom: 24px;">
+          <button class="comm-tab active" id="lib-tab-my" onclick="switchLibTab('my')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
+            Завантажені
+          </button>
+          <button class="comm-tab" id="lib-tab-liked" onclick="switchLibTab('liked')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Вподобані
+          </button>
+          <button class="comm-tab" id="lib-tab-playlists" onclick="switchLibTab('playlists')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Плейлисти
+          </button>
         </div>
-        <div class="tracks-list-full" id="liked-list">
-          <div class="empty-state" id="liked-empty">
-            <span>❤️</span>
-            <p>Натисни ❤️ на треку, щоб додати його сюди</p>
+
+        <div id="library-my-panel">
+          <div class="upload-zone" id="upload-zone">
+            <div class="upload-zone-inner" id="upload-drop-zone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                <polyline points="16 16 12 12 8 16"/>
+                <line x1="12" y1="12" x2="12" y2="21"/>
+                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+              </svg>
+              <p>Перетягни аудіофайли сюди</p>
+              <span>або</span>
+              <button onclick="document.getElementById('file-upload').click()">Вибрати файли</button>
+            </div>
           </div>
+          <div class="tracks-list-full" id="library-list">
+            <div class="empty-state" id="library-empty">
+              <span>🎵</span>
+              <p>Тут поки нічого немає. Завантаж свою музику!</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="library-liked-panel" style="display:none">
+          <div class="tracks-list-full" id="liked-list">
+            <div class="empty-state" id="liked-empty">
+              <span>❤️</span>
+              <p>Натисни ❤️ на треку, щоб додати його сюди</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="library-playlists-panel" style="display:none">
+          <div id="library-playlists-grid" class="comm-pl-grid"></div>
         </div>
       </section>
 
@@ -1272,9 +1285,13 @@
             <div class="profile-card-info">
               <input type="text" id="profile-name-input" class="profile-name-input" placeholder="Твоє ім'я" maxlength="50" />
               <textarea id="profile-bio-input" class="profile-bio-input" placeholder="Біографія... Розкажи про себе" maxlength="150" rows="2"></textarea>
-              <div class="profile-card-joined">
+              <div class="profile-card-joined" style="margin-bottom: 8px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span id="profile-joined-date">У числі учасників з ...</span>
+              </div>
+              <div style="display:flex; align-items:center; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 0 8px;">
+                <span style="color: var(--text-muted); font-size: 13px;">@</span>
+                <input type="text" id="profile-custom-id-input" placeholder="твій_унікальний_id" maxlength="20" style="background: transparent; border: none; color: var(--text-secondary); font-size: 13px; padding: 6px 4px; width: 100%; outline: none;" />
               </div>
             </div>
           </div>
@@ -1297,6 +1314,10 @@
           <div class="profile-widget-tab">Список бажаного</div>
         </div>
         <div class="profile-widgets-list">
+          <div style="margin-bottom: 12px; background: rgba(88, 101, 242, 0.1); border: 1px solid var(--accent); padding: 12px; border-radius: 8px; text-align: center;">
+            <p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-primary);">Бажаєте отримувати сповіщення про повідомлення?</p>
+            <button onclick="requestNativeNotifications()" style="background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px;">🔔 Увімкнути Push-сповіщення</button>
+          </div>
           <div class="profile-widget-card">
             <h4>Улюблений жанр</h4>
             <div class="widget-content">

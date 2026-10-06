@@ -122,10 +122,11 @@ async function msgUpsertProfile(user) {
       banner_url: http(user.customBanner),
       fav_genre: user.favGenre || '',
       top_track: user.topTrack || '',
-      joined_at: session.user.created_at || null
+      joined_at: session.user.created_at || null,
+      custom_id: user.customId || null
     };
     let { error } = await supabaseClient.from('profiles').upsert(full, { onConflict: 'id' });
-    if (error && /bio|banner_url|fav_genre|top_track|joined_at|column/i.test(error.message)) {
+    if (error && /bio|banner_url|fav_genre|top_track|joined_at|custom_id|column/i.test(error.message)) {
       ({ error } = await supabaseClient.from('profiles').upsert(base, { onConflict: 'id' }));
     }
     if (error) console.warn('[Msg] profile upsert failed', error.message);
