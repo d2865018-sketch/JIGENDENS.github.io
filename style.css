@@ -2561,11 +2561,10 @@ body {
 
 /* --- Media feed (Instagram-style post cards) --- */
 .comm-media-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 600px;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 100%;
 }
 
 .comm-media-card {
@@ -2573,10 +2572,14 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: var(--transition);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 .comm-media-card:hover {
   border-color: var(--border-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
 
 /* Post header — author info */
@@ -2621,18 +2624,23 @@ body {
 
 /* Post media box */
 .comm-media-box {
-  background: #000;
-  aspect-ratio: 4/3;
+  background: var(--bg-elevated, #1a1a1a);
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 .comm-media-box img,
 .comm-media-box video {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
+  transition: transform 0.3s ease;
+}
+.comm-media-card:hover .comm-media-box img {
+  transform: scale(1.05);
 }
 
 /* Post actions bar */

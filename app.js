@@ -2634,16 +2634,17 @@ async function renderCommunityMedia() {
     const box = m.kind === 'video'
       ? `<video src="${url}" controls preload="metadata" playsinline></video>`
       : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" data-nofb="1" loading="lazy" alt="" /></a>`;
-    const date = new Date(m.created_at).toLocaleDateString('uk-UA');
+    const date = new Date(m.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
     const mine = myId && m.user_id === myId;
+    const ownerLinkHtml = typeof msgOwnerLink === 'function' ? msgOwnerLink(m.user_id, m.owner_name) : `👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}`;
     return `
       <div class="comm-media-card">
         <div class="comm-media-box">${box}</div>
         <div class="comm-media-info">
           ${m.caption ? `<div class="comm-media-caption">${escapeHtml(String(m.caption))}</div>` : ''}
-          <div class="comm-media-meta">
-            <span class="comm-media-owner">👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}</span>
-            <span>${m.kind === 'video' ? '🎬' : '🖼️'} ${date}</span>
+          <div class="comm-media-meta" style="margin-top:10px; align-items:center;">
+            <span class="comm-media-owner">${ownerLinkHtml}</span>
+            <span style="opacity:0.7">${m.kind === 'video' ? '🎬' : '🖼️'} ${date}</span>
           </div>
           ${mine ? `<button class="comm-media-del" onclick="deleteCommunityMedia('${m.id}')">🗑️ Видалити</button>` : ''}
           ${(!mine && typeof msgWriteButton === 'function') ? `<div style="margin-top:10px">${msgWriteButton(m.user_id, m.owner_name)}</div>` : ''}
