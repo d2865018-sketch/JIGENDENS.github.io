@@ -597,6 +597,12 @@ function renderLikedList() {
 // ===== TRACK HTML =====
 function trackCardHTML(track, idx) {
   const playing = currentTrackIndex === getTrackGlobalIndex(track);
+  
+  const isSystem = !track.owner || ['SHADOW', 'SoundWave', 'Система'].includes(track.owner);
+  const genreHTML = isSystem 
+    ? `<span class="track-card-genre" style="background:var(--accent); color:white; font-weight:600;">⭐ SoundWave</span>`
+    : `<span class="track-card-genre">👤 Від: ${escapeHtml(String(track.owner))}</span>`;
+
   return `
     <div class="track-card ${playing ? 'now-playing' : ''}" onclick="playTrackById(${idx})" id="card-${track.id}">
       <div class="track-card-cover">
@@ -613,7 +619,7 @@ function trackCardHTML(track, idx) {
       <div class="track-card-info">
         <div class="track-card-title">${track.title}</div>
         <div class="track-card-artist">${track.artist}</div>
-        <span class="track-card-genre">${track.genre}</span>
+        ${genreHTML}
       </div>
     </div>
   `;
