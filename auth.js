@@ -57,6 +57,7 @@ async function checkSession() {
       bio: u.user_metadata?.bio || '',
       favGenre: u.user_metadata?.favGenre || '',
       topTrack: u.user_metadata?.topTrack || '',
+      customId: u.user_metadata?.customId || '',
       created_at: u.created_at
     };
     loginSuccess(userData, false);
@@ -283,6 +284,7 @@ async function handleLogin(e) {
     bio: u.user_metadata?.bio || '',
     favGenre: u.user_metadata?.favGenre || '',
     topTrack: u.user_metadata?.topTrack || '',
+    customId: u.user_metadata?.customId || '',
     created_at: u.created_at
   };
 
@@ -711,6 +713,7 @@ async function saveProfileEdit() {
     currentUser.topTrack = newTopTrack;
     currentUser.customAvatar = avatarValue;
     currentUser.customBanner = bannerValue;
+    currentUser.customId = newCustomId;
     if (typeof msgUpsertProfile === 'function') msgUpsertProfile(currentUser);
     updateTopbarLoggedIn(currentUser);
     if (typeof showNotification === 'function') {

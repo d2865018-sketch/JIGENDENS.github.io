@@ -1118,6 +1118,8 @@ function showSection(name, el) {
   // Close mobile sidebar
   const sidebar = document.getElementById('sidebar');
   if (sidebar) sidebar.classList.remove('open');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) overlay.classList.remove('show');
 
   if (name === 'library') {
     if (!el || el.id === 'nav-library') {
@@ -1263,6 +1265,8 @@ async function renderTopUsers() {
 
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) overlay.classList.toggle('show');
 }
 
 // ===== SEARCH =====
