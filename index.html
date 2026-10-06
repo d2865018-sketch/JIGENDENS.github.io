@@ -84,13 +84,7 @@
         </svg>
         MP3Tag Редактор
       </a>
-      <div class="sidebar-section-title">Спільнота</div>
-      <a href="#" class="nav-item" id="nav-community" onclick="showSection('community', this)">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
-        </svg>
-        Спільнота
-      </a>
+
       <a href="#" class="nav-item" id="nav-friends" onclick="showSection('friends', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -171,38 +165,7 @@
           <p class="section-subtitle">Що будемо слухати сьогодні?</p>
         </div>
 
-        <div class="featured-banner" id="featured-banner" onclick="playTrackById(0)">
-          <div class="featured-bg" id="featured-bg"></div>
-          <div class="featured-content">
-            <div class="featured-badge">🔥 Популярне</div>
-            <h2 class="featured-title" id="featured-title">Neon Pulse</h2>
-            <p class="featured-artist" id="featured-artist">Aetherflux</p>
-            <div class="featured-meta">
-              <span>🎵 Electronic</span>
-              <span>3:42</span>
-              <span>128K прослуховувань</span>
-            </div>
-            <button class="featured-play-btn" onclick="event.stopPropagation(); playTrackById(0)">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M5 3l14 9-14 9V3z"/></svg>
-              Слухати
-            </button>
-          </div>
-        </div>
-
-        <div class="section-block">
-          <div class="block-header">
-            <h2>Зараз популярно</h2>
-            <a href="#" class="see-all" onclick="showSection('explore', document.getElementById('nav-explore'))">Всі треки</a>
-          </div>
-          <div class="tracks-grid" id="trending-grid"></div>
-        </div>
-
-        <div class="section-block">
-          <div class="block-header">
-            <h2>Рекомендовані треки</h2>
-          </div>
-          <div class="tracks-list" id="recommended-list"></div>
-        </div>
+        <div class="tracks-list-full" id="home-tracks-list"></div>
       </section>
 
       <!-- EXPLORE SECTION -->
@@ -511,93 +474,7 @@
       </section>
 
       <!-- SEARCH RESULTS -->
-      <!-- COMMUNITY SECTION — Instagram-style -->
-      <section class="section" id="section-community">
 
-        <!-- Stories-style playlists bar -->
-        <div class="comm-stories-bar" id="comm-stories-bar">
-          <div class="comm-stories-scroll" id="comm-stories-scroll">
-            <!-- JS fills playlist circles here -->
-          </div>
-          <button class="comm-stories-arrow comm-stories-arrow--right" id="comm-stories-arrow-r" onclick="scrollStoriesRight()" aria-label="Далі">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-
-        <!-- Tabs -->
-        <div class="comm-tabs">
-          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
-            Треки
-          </button>
-          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Плейлисти
-          </button>
-          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            Стрічка
-          </button>
-        </div>
-
-        <!-- Create post bar (for media tab) -->
-        <div class="comm-create-bar" id="comm-create-bar" style="display:none">
-          <div class="comm-create-avatar" id="comm-create-avatar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <input type="text" id="media-caption" maxlength="300" placeholder="Що нового?" class="comm-create-input" />
-          <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
-          <div class="comm-create-actions">
-            <button class="comm-create-attach" onclick="document.getElementById('media-file').click()" title="Додати фото/відео">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            </button>
-            <span id="media-file-name" class="comm-create-filename"></span>
-            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-secondary); margin-left:auto; margin-right:15px; cursor:pointer;">
-              <input type="checkbox" id="media-anonymous" style="accent-color:var(--accent);">
-              Анонімно 👻
-            </label>
-            <button class="comm-create-publish" id="media-publish-btn" onclick="publishMedia()">Поділитися</button>
-          </div>
-        </div>
-
-        <!-- Header with publish button -->
-        <div class="comm-section-top" id="comm-section-top">
-          <div>
-            <h1>🌍 Спільнота</h1>
-            <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
-          </div>
-          <button class="upload-btn" onclick="showSection('mp3tag', document.getElementById('nav-mp3tag'))">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Опублікувати
-          </button>
-        </div>
-
-        <!-- Tab content panes -->
-        <div class="tracks-list-full" id="community-list"></div>
-        <div id="community-playlists-list" style="display:none"></div>
-        <div id="community-media-panel" style="display:none">
-          <div id="community-media-list"></div>
-        </div>
-      </section>
-
-      <!-- COMMUNITY PLAYLIST VIEW -->
-      <section class="section" id="section-community-playlist">
-        <div class="section-header">
-          <button class="playlist-back-btn" onclick="showSection('community', document.getElementById('nav-community')); switchCommunityTab('playlists')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
-            Назад
-          </button>
-          <h1 id="cp-name" style="margin-top:12px;">Плейлист</h1>
-          <p class="section-subtitle" id="cp-owner"></p>
-          <div id="cp-write-slot" style="margin-top:8px;"></div>
-          <p class="section-subtitle" id="cp-desc"></p>
-          <button class="playlist-play-all-btn" onclick="playCommunityPlaylist()" style="margin-top:12px;">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
-            Грати всі
-          </button>
-        </div>
-        <div class="tracks-list-full" id="cp-tracks-list"></div>
-      </section>
 
       <!-- MESSAGES SECTION -->
       <section class="section" id="section-messages">

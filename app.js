@@ -579,8 +579,7 @@ function setLoadingCards(containerId, count = 6, type = 'card') {
  */
 async function loadTracksByTerm(term, isFeatured = false) {
   // Show skeletons
-  setLoadingCards('trending-grid', 6, 'card');
-  setLoadingCards('recommended-list', 5, 'row');
+  setLoadingCards('home-tracks-list', 15, 'row');
 
   const results = await itunesJsonp(term, 25);
 
@@ -588,9 +587,8 @@ async function loadTracksByTerm(term, isFeatured = false) {
     tracks = results;
   } else {
     // Fallback message if API is unavailable
-    document.getElementById('trending-grid').innerHTML =
-      '<div class="empty-state" style="grid-column:1/-1"><span>🌐</span><p>Не вдалося завантажити треки. Перевір інтернет-з\'єднання.</p></div>';
-    document.getElementById('recommended-list').innerHTML = '';
+    const el = document.getElementById('home-tracks-list');
+    if (el) el.innerHTML = '<div class="empty-state"><span>🌐</span><p>Не вдалося завантажити треки. Перевір інтернет-з\'єднання.</p></div>';
     return;
   }
 
@@ -598,24 +596,14 @@ async function loadTracksByTerm(term, isFeatured = false) {
 }
 
 function renderAll(updateFeatured = true) {
-  renderTrendingGrid();
-  renderRecommendedList();
-  if (updateFeatured && tracks.length > 0) {
-    updateFeaturedBanner(0);
-  }
+  renderHomeList();
 }
 
 // ===== RENDER =====
-function renderTrendingGrid() {
-  const grid = document.getElementById('trending-grid');
-  const list = getAllTracks().slice(0, 6);
-  grid.innerHTML = list.map((t, i) => trackCardHTML(t, i)).join('');
-}
-
-function renderRecommendedList() {
-  const el = document.getElementById('recommended-list');
-  const list = getAllTracks().slice(0, 5);
-  el.innerHTML = list.map((t, i) => trackRowHTML(t, i + 6, 'rec')).join('');
+function renderHomeList() {
+  const el = document.getElementById('home-tracks-list');
+  if (!el) return;
+  el.innerHTML = getAllTracks().map((t, i) => trackRowHTML(t, i, 'home')).join('');
 }
 
 function renderExploreList(filter = 'all') {
@@ -656,25 +644,6 @@ function renderLikedList() {
   el.innerHTML = liked.map((t, i) => trackRowHTML(t, i, 'liked')).join('');
 }
 
-function renderFeatured() {
-  updateFeaturedBanner(0);
-}
-
-function updateFeaturedBanner(idx) {
-  const all = getAllTracks();
-  if (all.length === 0) return;
-  const t = all[idx] || all[0];
-  document.getElementById('featured-title').textContent = t.title;
-  document.getElementById('featured-artist').textContent = t.artist;
-  document.getElementById('featured-bg').style.backgroundImage = `url('${t.cover}')`;
-  document.getElementById('featured-banner').onclick = (e) => {
-    if (!e.target.closest('.featured-play-btn')) playTrackById(idx);
-  };
-  document.querySelector('.featured-play-btn').onclick = (e) => {
-    e.stopPropagation();
-    playTrackById(idx);
-  };
-}
 
 // ===== TRACK HTML =====
 function trackCardHTML(track, idx) {
@@ -1126,7 +1095,7 @@ function showSection(name, el) {
       switchLibTab('my');
     }
   }
-  if (name === 'home') renderTrendingGrid();
+  if (name === 'home') renderHomeList();
   if (name === 'explore') renderExploreList(currentGenreFilter);
   if (name === 'extractor') renderExtSavedList();
   if (name === 'mp3tag') renderMp3TagList();
@@ -1380,7 +1349,7 @@ async function handleFileUpload(input) {
 
   renderLibraryList();
   updateQueueList();
-  renderTrendingGrid();
+  renderHomeList();
   input.value = '';
 }
 
@@ -1917,8 +1886,7 @@ function updatePlayingHighlights() {
   if (!track) return;
   const el = document.getElementById(`row-${track.id}`);
   if (el) el.classList.add('playing');
-  renderTrendingGrid();
-  renderRecommendedList();
+  renderHomeList();
   if (currentSection === 'explore') renderExploreList(currentGenreFilter);
 }
 
@@ -2789,7 +2757,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!isMine && !inGlobal) tracks.push(track);
         });
         if (typeof renderLikedList === 'function' && currentSection === 'liked') renderLikedList();
-        if (typeof renderTrendingGrid === 'function' && currentSection === 'home') renderTrendingGrid();
+        if (typeof renderHomeList === 'function' && currentSection === 'home') renderHomeList();
       }
     } catch (e) {
       console.warn('[app.js] Preload public tracks failed', e);
