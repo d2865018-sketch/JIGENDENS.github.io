@@ -19,8 +19,65 @@ const COVERS = COVER_GRADIENTS.map(([c1, c2], i) =>
   )
 );
 
+// iTunes search terms per genre button
+const GENRE_TERMS = {
+  all:        'top chart music hits',
+  electronic: 'electronic dance music EDM',
+  chill:      'chill lofi relax study',
+  jazz:       'jazz classic smooth',
+  hiphop:     'hip hop rap',
+  pop:        'pop chart 2024',
+  rock:       'rock classic hits',
+  rnb:        'rnb soul R&B',
+};
+
+// ===== iTunes API (JSONP — works from file://) =====
+function itunesJsonp(term, limit = 25, country = 'US') {
+  return new Promise((resolve) => {
+    const cbName = 'sw_itunes_' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+    const script = document.createElement('script');
+
+    const cleanup = () => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    // Timeout fallback
+    const timer = setTimeout(() => { cleanup(); resolve([]); }, 9000);
+
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      cleanup();
+      const results = (data.results || [])
+        .filter(r => r.kind === 'song' && r.previewUrl)
+        .map(itunesToTrack);
+      resolve(results);
+    };
+
+    script.onerror = () => { clearTimeout(timer); cleanup(); resolve([]); };
+    script.src = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=${limit}&country=${country}&callback=${cbName}`;
+    document.head.appendChild(script);
+  });
+}
+
+function itunesToTrack(r) {
+  const art = (r.artworkUrl100 || '').replace('100x100bb', '400x400bb').replace('100x100', '400x400');
+  return {
+    id:       r.trackId,
+    title:    r.trackName    || 'Unknown',
+    artist:   r.artistName   || 'Unknown',
+    album:    r.collectionName || '',
+    genre:    (r.primaryGenreName || 'music').toLowerCase().replace(/[^a-z]/g, ''),
+    duration: Math.round((r.trackTimeMillis || 30000) / 1000),
+    cover:    art || COVERS[0],
+    plays:    r.trackViewUrl ? '♫ iTunes' : '—',
+    src:      r.previewUrl,   // real 30-sec preview!
+    preview:  true,
+  };
+}
+
 // ===== STATE =====
-let tracks = [];   // Global public tracks
+let tracks = [];   // Populated from iTunes
 let userTracks = [];
 
 let currentTrackIndex = -1;
@@ -219,7 +276,7 @@ function startDemoSynth(track) {
 }
 
 const audio = document.getElementById('audio-element');
-// Important for Web Audio API
+audio.crossOrigin = 'anonymous'; // Important for Web Audio API to process iTunes tracks
 
 // ===== EQUALIZER =====
 let mediaSource = null;
@@ -483,7 +540,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupKeyboard();
   // Load playlists for guest (will be reloaded after login)
   loadPlaylists(null);
-
+  // Load real music from iTunes on startup
+  loadTracksByTerm('top chart music hits', true);
 });
 
 
@@ -514,61 +572,66 @@ function setLoadingCards(containerId, count = 6, type = 'card') {
   }
 }
 
+/**
+ * Fetch tracks from iTunes by search term and populate the tracks array.
+ * @param {string} term - search term
+ * @param {boolean} isFeatured - if true, also update featured banner
+ */
+async function loadTracksByTerm(term, isFeatured = false) {
+  // Show skeletons
+  setLoadingCards('trending-grid', 6, 'card');
+  setLoadingCards('recommended-list', 5, 'row');
 
+  const results = await itunesJsonp(term, 25);
+
+  if (results.length > 0) {
+    tracks = results;
+  } else {
+    // Fallback message if API is unavailable
+    document.getElementById('trending-grid').innerHTML =
+      '<div class="empty-state" style="grid-column:1/-1"><span>🌐</span><p>Не вдалося завантажити треки. Перевір інтернет-з\'єднання.</p></div>';
+    document.getElementById('recommended-list').innerHTML = '';
+    return;
+  }
+
+  renderAll(isFeatured);
+}
 
 function renderAll(updateFeatured = true) {
-  renderHomeList();
+  renderTrendingGrid();
+  renderRecommendedList();
+  if (updateFeatured && tracks.length > 0) {
+    updateFeaturedBanner(0);
+  }
 }
 
 // ===== RENDER =====
-function renderHomeList() {
-  const el = document.getElementById('home-tracks-list');
-  if (!el) return;
-  // trackCardHTML expects globalIdx to be able to play track correctly
-  el.innerHTML = getAllTracks().map((t) => trackCardHTML(t, getTrackGlobalIndex(t))).join('');
-  
-  renderHomeStories();
+function renderTrendingGrid() {
+  const grid = document.getElementById('trending-grid');
+  const list = getAllTracks().slice(0, 6);
+  grid.innerHTML = list.map((t, i) => trackCardHTML(t, i)).join('');
 }
 
-async function renderHomeStories() {
-  const scrollEl = document.getElementById('comm-stories-scroll');
-  if (!scrollEl) return;
-  
-  if (communityPlaylists.length === 0 && typeof swLoadPublicPlaylists === 'function') {
-    communityPlaylists = await swLoadPublicPlaylists();
-  }
-  
-  if (communityPlaylists.length === 0) {
-    document.getElementById('comm-stories-bar').style.display = 'none';
-    return;
-  }
-  
-  document.getElementById('comm-stories-bar').style.display = 'block';
-  
-  scrollEl.innerHTML = communityPlaylists.map(p => {
-    const list = Array.isArray(p.tracks) ? p.tracks : [];
-    const cover = p.cover_url || (list[0] && list[0].cover) || null;
-    const coverHTML = cover
-      ? `<img src="${cover}" alt="" />`
-      : `<div style="width:100%;height:100%;background:${p.gradient || 'var(--bg-elevated)'}"></div>`;
-    
-    return `
-      <div class="comm-story-item" onclick="openCommunityPlaylist('${p.id}')">
-        <div class="comm-story-ring">
-          <div class="comm-story-avatar">${coverHTML}</div>
-        </div>
-        <div class="comm-story-label">${escapeHtml(p.name)}</div>
-      </div>
-    `;
-  }).join('');
+function renderRecommendedList() {
+  const el = document.getElementById('recommended-list');
+  const list = getAllTracks().slice(0, 5);
+  el.innerHTML = list.map((t, i) => trackRowHTML(t, i + 6, 'rec')).join('');
 }
 
-function scrollStoriesRight() {
-  const el = document.getElementById('comm-stories-scroll');
-  if (el) el.scrollBy({ left: 200, behavior: 'smooth' });
+function renderExploreList(filter = 'all') {
+  const el = document.getElementById('explore-list');
+  const term = GENRE_TERMS[filter] || GENRE_TERMS.all;
+  setLoadingCards('explore-list', 10, 'row');
+  itunesJsonp(term, 30).then(results => {
+    if (results.length === 0) {
+      el.innerHTML = '<div class="empty-state"><span>\uD83D\uDD0D</span><p>\u041D\u0456\u0447\u043E\u0433\u043E \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E</p></div>';
+      return;
+    }
+    // Store in global tracks so clicks work
+    tracks = results;
+    el.innerHTML = results.map((t, i) => trackRowHTML(t, i, 'explore')).join('');
+  });
 }
-
-
 
 function renderLibraryList() {
   const el = document.getElementById('library-list');
@@ -593,6 +656,25 @@ function renderLikedList() {
   el.innerHTML = liked.map((t, i) => trackRowHTML(t, i, 'liked')).join('');
 }
 
+function renderFeatured() {
+  updateFeaturedBanner(0);
+}
+
+function updateFeaturedBanner(idx) {
+  const all = getAllTracks();
+  if (all.length === 0) return;
+  const t = all[idx] || all[0];
+  document.getElementById('featured-title').textContent = t.title;
+  document.getElementById('featured-artist').textContent = t.artist;
+  document.getElementById('featured-bg').style.backgroundImage = `url('${t.cover}')`;
+  document.getElementById('featured-banner').onclick = (e) => {
+    if (!e.target.closest('.featured-play-btn')) playTrackById(idx);
+  };
+  document.querySelector('.featured-play-btn').onclick = (e) => {
+    e.stopPropagation();
+    playTrackById(idx);
+  };
+}
 
 // ===== TRACK HTML =====
 function trackCardHTML(track, idx) {
@@ -739,6 +821,8 @@ function playTrackByGlobalIndex(globalIdx) {
   updatePlayingHighlights();
   updateQueueList();
 
+  // Update featured banner with current track
+  updateFeaturedBanner(globalIdx < tracks.length ? globalIdx : 0);
 }
 
 function startDemoProgress(track) {
@@ -1042,11 +1126,11 @@ function showSection(name, el) {
       switchLibTab('my');
     }
   }
-  if (name === 'home') renderHomeList();
+  if (name === 'home') renderTrendingGrid();
   if (name === 'explore') renderExploreList(currentGenreFilter);
   if (name === 'extractor') renderExtSavedList();
   if (name === 'mp3tag') renderMp3TagList();
-  if (name === 'feed') renderCommunityMedia();
+  if (name === 'community') { renderCommunityList(); renderCommunityPlaylists(); }
   if (name === 'top-users') renderTopUsers();
   if (name === 'friends' && typeof pfOnSectionOpen === 'function') pfOnSectionOpen();
   if (name === 'messages' && typeof msgOnSectionOpen === 'function') msgOnSectionOpen();
@@ -1205,13 +1289,8 @@ function handleSearch(query) {
 
   // Debounce: wait 500ms after typing stops
   clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(() => {
-    const qLower = q.toLowerCase();
-    const results = tracks.filter(t => 
-      (t.title && t.title.toLowerCase().includes(qLower)) || 
-      (t.artist && t.artist.toLowerCase().includes(qLower))
-    );
-    
+  searchDebounceTimer = setTimeout(async () => {
+    const results = await itunesJsonp(q, 30);
     const el = document.getElementById('search-list');
 
     if (results.length === 0) {
@@ -1220,9 +1299,19 @@ function handleSearch(query) {
       return;
     }
 
+    // Store in global tracks so clicks work!
+    tracks = results;
     document.getElementById('search-results-count').textContent = `\u0417\u043d\u0430\u0439\u0434\u0435\u043d\u043e ${results.length} \u0442\u0440\u0435\u043a\u0456\u0432 \uD83C\uDFB5`;
     el.innerHTML = results.map((t, i) => trackRowHTML(t, i, 'search')).join('');
-  }, 300);
+  }, 500);
+}
+
+// ===== GENRE FILTER =====
+function filterByGenre(genre, el) {
+  currentGenreFilter = genre;
+  document.querySelectorAll('.genre-tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderExploreList(genre); // will query iTunes by genre term
 }
 
 // ===== FILE UPLOAD =====
@@ -1291,7 +1380,7 @@ async function handleFileUpload(input) {
 
   renderLibraryList();
   updateQueueList();
-  renderHomeList();
+  renderTrendingGrid();
   input.value = '';
 }
 
@@ -1828,7 +1917,8 @@ function updatePlayingHighlights() {
   if (!track) return;
   const el = document.getElementById(`row-${track.id}`);
   if (el) el.classList.add('playing');
-  renderHomeList();
+  renderTrendingGrid();
+  renderRecommendedList();
   if (currentSection === 'explore') renderExploreList(currentGenreFilter);
 }
 
@@ -2526,7 +2616,7 @@ function openCommunityPlaylist(id) {
   document.getElementById('cp-tracks-list').innerHTML =
     resolved.map((t, i) => trackRowHTML(t, i, 'community')).join('');
 
-  showSection('community-playlist', document.getElementById('nav-home'));
+  showSection('community-playlist', document.getElementById('nav-community'));
 }
 
 function playCommunityPlaylist() {
@@ -2691,7 +2781,6 @@ document.addEventListener('error', (e) => {
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof swLoadPublicTracks === 'function') {
     try {
-      if (currentSection === 'home') setLoadingCards('home-tracks-list', 12, 'card');
       const pTracks = await swLoadPublicTracks();
       if (pTracks && pTracks.length) {
         pTracks.forEach((track) => {
@@ -2700,7 +2789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!isMine && !inGlobal) tracks.push(track);
         });
         if (typeof renderLikedList === 'function' && currentSection === 'liked') renderLikedList();
-        if (typeof renderHomeList === 'function' && currentSection === 'home') renderHomeList();
+        if (typeof renderTrendingGrid === 'function' && currentSection === 'home') renderTrendingGrid();
       }
     } catch (e) {
       console.warn('[app.js] Preload public tracks failed', e);

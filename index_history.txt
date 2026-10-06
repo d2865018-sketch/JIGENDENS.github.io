@@ -1,0 +1,2779 @@
+commit 2486e7e1e8d1a04b019ff0d46d0f3a8090fc162a
+Author: User <user@example.com>
+Date:   Tue Oct 6 13:59:07 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index ab3ef21..4357b73 100644
+--- a/index.html
++++ b/index.html
+@@ -84,13 +84,7 @@
+         </svg>
+         MP3Tag Редактор
+       </a>
+-      <div class="sidebar-section-title">Спільнота</div>
+-      <a href="#" class="nav-item" id="nav-community" onclick="showSection('community', this)">
+-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-          <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
+-        </svg>
+-        Спільнота
+-      </a>
++
+       <a href="#" class="nav-item" id="nav-friends" onclick="showSection('friends', this)">
+         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+@@ -171,38 +165,7 @@
+           <p class="section-subtitle">Що будемо слухати сьогодні?</p>
+         </div>
+ 
+-        <div class="featured-banner" id="featured-banner" onclick="playTrackById(0)">
+-          <div class="featured-bg" id="featured-bg"></div>
+-          <div class="featured-content">
+-            <div class="featured-badge">🔥 Популярне</div>
+-            <h2 class="featured-title" id="featured-title">Neon Pulse</h2>
+-            <p class="featured-artist" id="featured-artist">Aetherflux</p>
+-            <div class="featured-meta">
+-              <span>🎵 Electronic</span>
+-              <span>3:42</span>
+-              <span>128K прослуховувань</span>
+-            </div>
+-            <button class="featured-play-btn" onclick="event.stopPropagation(); playTrackById(0)">
+-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M5 3l14 9-14 9V3z"/></svg>
+-              Слухати
+-            </button>
+-          </div>
+-        </div>
+-
+-        <div class="section-block">
+-          <div class="block-header">
+-            <h2>Зараз популярно</h2>
+-            <a href="#" class="see-all" onclick="showSection('explore', document.getElementById('nav-explore'))">Всі треки</a>
+-          </div>
+-          <div class="tracks-grid" id="trending-grid"></div>
+-        </div>
+-
+-        <div class="section-block">
+-          <div class="block-header">
+-            <h2>Рекомендовані треки</h2>
+-          </div>
+-          <div class="tracks-list" id="recommended-list"></div>
+-        </div>
++        <div class="tracks-list-full" id="home-tracks-list"></div>
+       </section>
+ 
+       <!-- EXPLORE SECTION -->
+@@ -511,93 +474,7 @@
+       </section>
+ 
+       <!-- SEARCH RESULTS -->
+-      <!-- COMMUNITY SECTION — Instagram-style -->
+-      <section class="section" id="section-community">
+-
+-        <!-- Stories-style playlists bar -->
+-        <div class="comm-stories-bar" id="comm-stories-bar">
+-          <div class="comm-stories-scroll" id="comm-stories-scroll">
+-            <!-- JS fills playlist circles here -->
+-          </div>
+-          <button class="comm-stories-arrow comm-stories-arrow--right" id="comm-stories-arrow-r" onclick="scrollStoriesRight()" aria-label="Далі">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+-          </button>
+-        </div>
+-
+-        <!-- Tabs -->
+-        <div class="comm-tabs">
+-          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
+-            Треки
+-          </button>
+-          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+-            Плейлисти
+-          </button>
+-          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+-            Стрічка
+-          </button>
+-        </div>
+-
+-        <!-- Create post bar (for media tab) -->
+-        <div class="comm-create-bar" id="comm-create-bar" style="display:none">
+-          <div class="comm-create-avatar" id="comm-create-avatar">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+-          </div>
+-          <input type="text" id="media-caption" maxlength="300" placeholder="Що нового?" class="comm-create-input" />
+-          <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
+-          <div class="comm-create-actions">
+-            <button class="comm-create-attach" onclick="document.getElementById('media-file').click()" title="Додати фото/відео">
+-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+-            </button>
+-            <span id="media-file-name" class="comm-create-filename"></span>
+-            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-secondary); margin-left:auto; margin-right:15px; cursor:pointer;">
+-              <input type="checkbox" id="media-anonymous" style="accent-color:var(--accent);">
+-              Анонімно 👻
+-            </label>
+-            <button class="comm-create-publish" id="media-publish-btn" onclick="publishMedia()">Поділитися</button>
+-          </div>
+-        </div>
+-
+-        <!-- Header with publish button -->
+-        <div class="comm-section-top" id="comm-section-top">
+-          <div>
+-            <h1>🌍 Спільнота</h1>
+-            <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
+-          </div>
+-          <button class="upload-btn" onclick="showSection('mp3tag', document.getElementById('nav-mp3tag'))">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+-            Опублікувати
+-          </button>
+-        </div>
+-
+-        <!-- Tab content panes -->
+-        <div class="tracks-list-full" id="community-list"></div>
+-        <div id="community-playlists-list" style="display:none"></div>
+-        <div id="community-media-panel" style="display:none">
+-          <div id="community-media-list"></div>
+-        </div>
+-      </section>
+ 
+-      <!-- COMMUNITY PLAYLIST VIEW -->
+-      <section class="section" id="section-community-playlist">
+-        <div class="section-header">
+-          <button class="playlist-back-btn" onclick="showSection('community', document.getElementById('nav-community')); switchCommunityTab('playlists')">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+-            Назад
+-          </button>
+-          <h1 id="cp-name" style="margin-top:12px;">Плейлист</h1>
+-          <p class="section-subtitle" id="cp-owner"></p>
+-          <div id="cp-write-slot" style="margin-top:8px;"></div>
+-          <p class="section-subtitle" id="cp-desc"></p>
+-          <button class="playlist-play-all-btn" onclick="playCommunityPlaylist()" style="margin-top:12px;">
+-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
+-            Грати всі
+-          </button>
+-        </div>
+-        <div class="tracks-list-full" id="cp-tracks-list"></div>
+-      </section>
+ 
+       <!-- MESSAGES SECTION -->
+       <section class="section" id="section-messages">
+
+commit 40e38686d065c4e72e62b5e3f4ed20c2b72794ba
+Author: User <user@example.com>
+Date:   Tue Oct 6 13:50:33 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 5f68914..ab3ef21 100644
+--- a/index.html
++++ b/index.html
+@@ -123,6 +123,7 @@
+       <div class="playlist-empty-hint" id="playlist-empty-hint">Натисни + щоб створити плейлист</div>
+     </div>
+   </aside>
++  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+ 
+   <!-- Main Content -->
+   <main class="main-content">
+
+commit a18698c4eec4c22754da8a8cef6154eed26d4807
+Author: User <user@example.com>
+Date:   Tue Oct 6 13:34:20 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 50d64ee..5f68914 100644
+--- a/index.html
++++ b/index.html
+@@ -69,12 +69,7 @@
+         </svg>
+         Бібліотека
+       </a>
+-      <a href="#" class="nav-item" id="nav-liked" onclick="showSection('liked', this)">
+-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+-        </svg>
+-        Вподобані
+-      </a>
++      <div class="sidebar-section-title">Редактор</div>
+       <a href="#" class="nav-item" id="nav-extractor" onclick="showSection('extractor', this)">
+         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+           <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.9L15 14"/>
+@@ -89,6 +84,7 @@
+         </svg>
+         MP3Tag Редактор
+       </a>
++      <div class="sidebar-section-title">Спільнота</div>
+       <a href="#" class="nav-item" id="nav-community" onclick="showSection('community', this)">
+         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+           <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
+@@ -235,38 +231,55 @@
+           <h1>Моя бібліотека</h1>
+           <p class="section-subtitle">Твої треки та завантажені файли</p>
+         </div>
+-        <div class="upload-zone" id="upload-zone">
+-          <div class="upload-zone-inner" id="upload-drop-zone">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+-              <polyline points="16 16 12 12 8 16"/>
+-              <line x1="12" y1="12" x2="12" y2="21"/>
+-              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+-            </svg>
+-            <p>Перетягни аудіофайли сюди</p>
+-            <span>або</span>
+-            <button onclick="document.getElementById('file-upload').click()">Вибрати файли</button>
+-          </div>
++
++        <div class="comm-tabs" style="margin-bottom: 24px;">
++          <button class="comm-tab active" id="lib-tab-my" onclick="switchLibTab('my')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
++            Завантажені
++          </button>
++          <button class="comm-tab" id="lib-tab-liked" onclick="switchLibTab('liked')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
++            Вподобані
++          </button>
++          <button class="comm-tab" id="lib-tab-playlists" onclick="switchLibTab('playlists')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
++            Плейлисти
++          </button>
+         </div>
+-        <div class="tracks-list-full" id="library-list">
+-          <div class="empty-state" id="library-empty">
+-            <span>🎵</span>
+-            <p>Тут поки нічого немає. Завантаж свою музику!</p>
++
++        <div id="library-my-panel">
++          <div class="upload-zone" id="upload-zone">
++            <div class="upload-zone-inner" id="upload-drop-zone">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
++                <polyline points="16 16 12 12 8 16"/>
++                <line x1="12" y1="12" x2="12" y2="21"/>
++                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
++              </svg>
++              <p>Перетягни аудіофайли сюди</p>
++              <span>або</span>
++              <button onclick="document.getElementById('file-upload').click()">Вибрати файли</button>
++            </div>
++          </div>
++          <div class="tracks-list-full" id="library-list">
++            <div class="empty-state" id="library-empty">
++              <span>🎵</span>
++              <p>Тут поки нічого немає. Завантаж свою музику!</p>
++            </div>
+           </div>
+         </div>
+-      </section>
+ 
+-      <!-- LIKED SECTION -->
+-      <section class="section" id="section-liked">
+-        <div class="section-header">
+-          <h1>Вподобані треки</h1>
+-          <p class="section-subtitle">Твої улюблені</p>
+-        </div>
+-        <div class="tracks-list-full" id="liked-list">
+-          <div class="empty-state" id="liked-empty">
+-            <span>❤️</span>
+-            <p>Натисни ❤️ на треку, щоб додати його сюди</p>
++        <div id="library-liked-panel" style="display:none">
++          <div class="tracks-list-full" id="liked-list">
++            <div class="empty-state" id="liked-empty">
++              <span>❤️</span>
++              <p>Натисни ❤️ на треку, щоб додати його сюди</p>
++            </div>
+           </div>
+         </div>
++
++        <div id="library-playlists-panel" style="display:none">
++          <div id="library-playlists-grid" class="comm-pl-grid"></div>
++        </div>
+       </section>
+ 
+       <!-- PLAYLIST VIEW SECTION -->
+@@ -1272,10 +1285,14 @@
+             <div class="profile-card-info">
+               <input type="text" id="profile-name-input" class="profile-name-input" placeholder="Твоє ім'я" maxlength="50" />
+               <textarea id="profile-bio-input" class="profile-bio-input" placeholder="Біографія... Розкажи про себе" maxlength="150" rows="2"></textarea>
+-              <div class="profile-card-joined">
++              <div class="profile-card-joined" style="margin-bottom: 8px;">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                 <span id="profile-joined-date">У числі учасників з ...</span>
+               </div>
++              <div style="display:flex; align-items:center; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 0 8px;">
++                <span style="color: var(--text-muted); font-size: 13px;">@</span>
++                <input type="text" id="profile-custom-id-input" placeholder="твій_унікальний_id" maxlength="20" style="background: transparent; border: none; color: var(--text-secondary); font-size: 13px; padding: 6px 4px; width: 100%; outline: none;" />
++              </div>
+             </div>
+           </div>
+         </div>
+@@ -1297,6 +1314,10 @@
+           <div class="profile-widget-tab">Список бажаного</div>
+         </div>
+         <div class="profile-widgets-list">
++          <div style="margin-bottom: 12px; background: rgba(88, 101, 242, 0.1); border: 1px solid var(--accent); padding: 12px; border-radius: 8px; text-align: center;">
++            <p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-primary);">Бажаєте отримувати сповіщення про повідомлення?</p>
++            <button onclick="requestNativeNotifications()" style="background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px;">🔔 Увімкнути Push-сповіщення</button>
++          </div>
+           <div class="profile-widget-card">
+             <h4>Улюблений жанр</h4>
+             <div class="widget-content">
+
+commit 1522561552510155541c92e548988d2652fd4949
+Author: User <user@example.com>
+Date:   Tue Oct 6 00:31:38 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index c896bef..50d64ee 100644
+--- a/index.html
++++ b/index.html
+@@ -17,8 +17,8 @@
+   <link rel="preconnect" href="https://fonts.googleapis.com" />
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+-  <link rel="stylesheet" href="style.css?v=9" />
+-  <link rel="stylesheet" href="auth.css?v=9" />
++  <link rel="stylesheet" href="style.css?v=10" />
++  <link rel="stylesheet" href="auth.css?v=10" />
+   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+   <script type="text/javascript">
+      (function(){
+@@ -95,6 +95,13 @@
+         </svg>
+         Спільнота
+       </a>
++      <a href="#" class="nav-item" id="nav-friends" onclick="showSection('friends', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
++        </svg>
++        Друзі
++        <span class="nav-badge" id="friends-badge" style="display:none">0</span>
++      </a>
+       <a href="#" class="nav-item" id="nav-messages" onclick="showSection('messages', this)">
+         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+@@ -604,8 +611,8 @@
+                 <button class="msg-back" onclick="msgCloseChat()" title="Назад">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+                 </button>
+-                <div id="msg-chat-avatar"></div>
+-                <div class="msg-chat-title" id="msg-chat-name"></div>
++                <div id="msg-chat-avatar" onclick="msgOpenActiveProfile()" title="Відкрити профіль"></div>
++                <div class="msg-chat-title" id="msg-chat-name" onclick="msgOpenActiveProfile()" title="Відкрити профіль"></div>
+               </header>
+               <div class="msg-thread" id="msg-thread"></div>
+               <div class="msg-compose">
+@@ -619,6 +626,25 @@
+         </div>
+       </section>
+ 
++      <!-- FRIENDS SECTION -->
++      <section class="section" id="section-friends">
++        <div class="section-header">
++          <h1>👥 Друзі</h1>
++          <p class="section-subtitle">Додавай друзів, переглядай профілі та пиши їм</p>
++        </div>
++        <div class="msg-guest" id="friends-guest" style="display:none">
++          <div class="msg-guest-icon">👥</div>
++          <h2>Друзі</h2>
++          <p>Увійди в акаунт, щоб додавати друзів.</p>
++          <button class="msg-write-btn" onclick="openAuth('login')">Увійти</button>
++        </div>
++        <div id="friends-main" style="display:none">
++          <input type="text" id="friends-search" class="msg-search" placeholder="Знайти користувача за іменем..." autocomplete="off" oninput="pfOnSearch(this.value)" />
++          <div id="friends-search-results"></div>
++          <div id="friends-lists"></div>
++        </div>
++      </section>
++
+       <section class="section" id="section-search">
+         <div class="section-header">
+           <h1>Результати пошуку</h1>
+@@ -1304,10 +1330,11 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=9"></script>
+-  <script src="app.js?v=9"></script>
+-  <script src="auth.js?v=9"></script>
+-  <script src="messages.js?v=9"></script>
++  <script src="storage.js?v=10"></script>
++  <script src="app.js?v=10"></script>
++  <script src="auth.js?v=10"></script>
++  <script src="messages.js?v=10"></script>
++  <script src="profiles.js?v=10"></script>
+ 
+   <script>
+     // ===== PWA: service worker + кнопка "Встановити" =====
+
+commit af22f1d96a5b49278ec218cbf3f9eeec7a51d313
+Author: User <user@example.com>
+Date:   Tue Oct 6 00:05:27 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 8aedf04..c896bef 100644
+--- a/index.html
++++ b/index.html
+@@ -17,8 +17,8 @@
+   <link rel="preconnect" href="https://fonts.googleapis.com" />
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+-  <link rel="stylesheet" href="style.css?v=8" />
+-  <link rel="stylesheet" href="auth.css?v=8" />
++  <link rel="stylesheet" href="style.css?v=9" />
++  <link rel="stylesheet" href="auth.css?v=9" />
+   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+   <script type="text/javascript">
+      (function(){
+@@ -1304,10 +1304,10 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=8"></script>
+-  <script src="app.js?v=8"></script>
+-  <script src="auth.js?v=8"></script>
+-  <script src="messages.js?v=8"></script>
++  <script src="storage.js?v=9"></script>
++  <script src="app.js?v=9"></script>
++  <script src="auth.js?v=9"></script>
++  <script src="messages.js?v=9"></script>
+ 
+   <script>
+     // ===== PWA: service worker + кнопка "Встановити" =====
+
+commit 1735b525ea5f95df70fa0d8f67d43170a41063e8
+Author: User <user@example.com>
+Date:   Tue Oct 6 00:01:23 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 3348f7d..8aedf04 100644
+--- a/index.html
++++ b/index.html
+@@ -1,4 +1,4 @@
+-﻿<!DOCTYPE html>
++<!DOCTYPE html>
+ <html lang="uk">
+ <head>
+   <meta charset="UTF-8" />
+@@ -102,6 +102,12 @@
+         Повідомлення
+         <span class="nav-badge" id="msg-badge" style="display:none">0</span>
+       </a>
++      <a href="#" class="nav-item" id="nav-top-users" onclick="showSection('top-users', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v8a5 5 0 0 1-10 0V4"/><path d="M4 4h3v5c0 1.5 1 3.5 3 4M20 4h-3v5c0 1.5-1 3.5-3 4"/>
++        </svg>
++        Топ користувачів
++      </a>
+     </nav>
+ 
+     <div class="sidebar-playlists-header">
+@@ -456,10 +462,21 @@
+               </label>
+             </div>
+             
++            <div class="ext-save-field" style="margin-bottom:15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
++              <div>
++                <label style="margin:0; font-weight: 500;">Анонімно 👻</label>
++                <p style="margin: 4px 0 0; font-size: 11px; color: var(--text-muted);">Приховати своє ім'я (буде вказано "Анонім")</p>
++              </div>
++              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
++                <input type="checkbox" id="mp3tag-anonymous" style="opacity: 0; width: 0; height: 0;">
++                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-hover); transition: .4s; border-radius: 24px;"></span>
++              </label>
++            </div>
++            
+             <style>
+-              #mp3tag-public:checked + .slider { background-color: var(--accent); }
++              #mp3tag-public:checked + .slider, #mp3tag-anonymous:checked + .slider { background-color: var(--accent); }
+               .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+-              #mp3tag-public:checked + .slider:before { transform: translateX(20px); }
++              #mp3tag-public:checked + .slider:before, #mp3tag-anonymous:checked + .slider:before { transform: translateX(20px); }
+             </style>
+ 
+             <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
+@@ -514,6 +531,10 @@
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+             </button>
+             <span id="media-file-name" class="comm-create-filename"></span>
++            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-secondary); margin-left:auto; margin-right:15px; cursor:pointer;">
++              <input type="checkbox" id="media-anonymous" style="accent-color:var(--accent);">
++              Анонімно 👻
++            </label>
+             <button class="comm-create-publish" id="media-publish-btn" onclick="publishMedia()">Поділитися</button>
+           </div>
+         </div>
+@@ -606,6 +627,15 @@
+         <div class="tracks-list-full" id="search-list"></div>
+       </section>
+ 
++      <!-- TOP USERS SECTION -->
++      <section class="section" id="section-top-users">
++        <div class="section-header">
++          <h1>🏆 Топ користувачів</h1>
++          <p class="section-subtitle">Найактивніші учасники спільноти за кількістю публічних треків</p>
++        </div>
++        <div class="tracks-list-full" id="top-users-list"></div>
++      </section>
++
+     </div>
+   </main>
+ 
+@@ -1012,6 +1042,12 @@
+       </svg>
+       Профіль
+     </button>
++    <button class="user-dropdown-item" onclick="startShakeForFriend(); closeDropdown()">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M2 12l2-2v4z"/><path d="M22 12l-2-2v4z"/>
++      </svg>
++      Знайти друга (Потряси)
++    </button>
+     <button class="user-dropdown-item" onclick="showSection('library', document.getElementById('nav-library')); closeDropdown()">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+         <path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
+@@ -1166,38 +1202,105 @@
+     </div>
+   </div>
+ 
+-  <!-- Profile Edit Modal -->
+-  <div class="accsw-overlay" id="profile-edit-overlay" onclick="closeProfileEdit()">
+-    <div class="accsw-modal" onclick="event.stopPropagation()">
+-      <div class="accsw-header">
+-        <h3>Редагувати профіль</h3>
+-        <button class="accsw-close" onclick="closeProfileEdit()">
+-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+-        </button>
++  <!-- Profile Edit Modal (Discord Style) -->
++  <div class="profile-overlay" id="profile-edit-overlay" onclick="closeProfileEdit()">
++    <div class="profile-modal-full" onclick="event.stopPropagation()">
++      
++      <!-- Left Sidebar -->
++      <div class="profile-modal-sidebar">
++        <h2 class="profile-sidebar-title">Налаштування профілю</h2>
++        <div class="profile-sidebar-menu">
++          <div class="profile-sidebar-item active">Основний профіль</div>
++          <div class="profile-sidebar-item">Табличка з іменем</div>
++          <div class="profile-sidebar-item">Аватар та прикраси</div>
++          <div class="profile-sidebar-item">Колір банера</div>
++          <div class="profile-sidebar-item">Ефект профілю та рамка</div>
++        </div>
+       </div>
+-      <div class="profile-edit-body" style="padding: 20px;">
+-        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
+-          <div class="avatar" id="profile-edit-avatar" style="width: 80px; height: 80px; font-size: 28px; margin-bottom: 12px; cursor: pointer; object-fit: cover; overflow: hidden;" onclick="document.getElementById('profile-avatar-file').click()" title="Змінити аватарку"></div>
+-          <button class="upload-btn" onclick="document.getElementById('profile-avatar-file').click()" style="background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border);">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+-              <polyline points="17 8 12 3 7 8"></polyline>
+-              <line x1="12" y1="3" x2="12" y2="15"></line>
+-            </svg>
+-            Завантажити фото
++      
++      <!-- Center Content (Preview & Edit) -->
++      <div class="profile-modal-content">
++        <div class="profile-modal-header-top">
++          <h3>Профіль</h3>
++          <button class="profile-close-btn" onclick="closeProfileEdit()">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+           </button>
+-          <input type="file" id="profile-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)" />
+         </div>
+         
+-        <div class="playlist-modal-field">
+-          <label>Ім'я</label>
+-          <input type="text" id="profile-name-input" placeholder="Твоє ім'я" maxlength="50" style="width: 100%; box-sizing: border-box;" />
++        <div class="profile-preview-container">
++          <!-- The Discord-like profile card -->
++          <div class="profile-card">
++            <!-- Banner -->
++            <div class="profile-card-banner" id="profile-card-banner" onclick="document.getElementById('profile-banner-file').click()" title="Змінити банер">
++              <div class="profile-banner-edit-hint">
++                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
++              </div>
++            </div>
++            
++            <!-- Avatar -->
++            <div class="profile-card-avatar-wrapper">
++              <div class="profile-card-avatar" id="profile-edit-avatar" onclick="document.getElementById('profile-avatar-file').click()" title="Змінити аватарку"></div>
++            </div>
++            
++            <!-- Info -->
++            <div class="profile-card-info">
++              <input type="text" id="profile-name-input" class="profile-name-input" placeholder="Твоє ім'я" maxlength="50" />
++              <textarea id="profile-bio-input" class="profile-bio-input" placeholder="Біографія... Розкажи про себе" maxlength="150" rows="2"></textarea>
++              <div class="profile-card-joined">
++                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
++                <span id="profile-joined-date">У числі учасників з ...</span>
++              </div>
++            </div>
++          </div>
++        </div>
++        
++        <div class="profile-modal-actions">
++          <button class="profile-cancel-btn" onclick="closeProfileEdit()">Скасувати</button>
++          <button class="profile-save-btn" onclick="saveProfileEdit()">Зберегти зміни</button>
+         </div>
++
++        <input type="file" id="profile-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)" />
++        <input type="file" id="profile-banner-file" accept="image/*" style="display:none" onchange="handleBannerUpload(this)" />
+       </div>
+-      <div class="accsw-footer" style="justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border);">
+-        <button class="playlist-modal-cancel" onclick="closeProfileEdit()" style="margin-right: 12px;">Скасувати</button>
+-        <button class="playlist-modal-save" onclick="saveProfileEdit()">Зберегти</button>
++      
++      <!-- Right Sidebar (Widgets) -->
++      <div class="profile-modal-widgets">
++        <div class="profile-widgets-tabs">
++          <div class="profile-widget-tab active">Дошка</div>
++          <div class="profile-widget-tab">Активність</div>
++          <div class="profile-widget-tab">Список бажаного</div>
++        </div>
++        <div class="profile-widgets-list">
++          <div class="profile-widget-card">
++            <h4>Улюблений жанр</h4>
++            <div class="widget-content">
++              <div class="widget-icon">🎧</div>
++              <input type="text" id="profile-fav-genre-input" class="widget-input" placeholder="Введіть жанр..." maxlength="30" />
++            </div>
++          </div>
++          <div class="profile-widget-card">
++            <h4>Топ трек</h4>
++            <div id="profile-top-track-preview" style="display: none; align-items: center; gap: 12px; background: var(--bg-primary); padding: 8px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border);">
++              <div style="position: relative; width: 48px; height: 48px; border-radius: 6px; overflow: hidden; flex-shrink: 0;">
++                <img id="profile-top-track-img" src="" style="width: 100%; height: 100%; object-fit: cover;" />
++                <div onclick="playProfileTopTrack()" style="position: absolute; inset:0; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; cursor: pointer; opacity: 0; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
++                  <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
++                </div>
++              </div>
++              <div style="flex: 1; min-width: 0;">
++                <div id="profile-top-track-title" style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
++                <div id="profile-top-track-artist" style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
++              </div>
++            </div>
++            <div class="widget-content">
++              <select id="profile-top-track-select" class="widget-input" style="flex: 1; margin: 0;" onchange="updateProfileTopTrackPreview()">
++                <option value="">Не вибрано</option>
++              </select>
++            </div>
++          </div>
++        </div>
+       </div>
++      
+     </div>
+   </div>
+ 
+
+commit 2db56bdb40e47fe1bde17c07ac6bffd32f8f8478
+Author: User <user@example.com>
+Date:   Sun Oct 4 00:30:06 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index cb39ede..3348f7d 100644
+--- a/index.html
++++ b/index.html
+@@ -1215,31 +1215,36 @@
+     }
+ 
+     var deferredInstallPrompt = null;
++    var ua = navigator.userAgent;
+     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+-    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
++    var isIOS = /iphone|ipad|ipod/i.test(ua) ||
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
++    var isAndroid = /android/i.test(ua);
++    var isEdge = /Edg\//.test(ua);
++    var isFirefox = /firefox|fxios/i.test(ua);
++    var isChrome = /chrome|crios/i.test(ua) && !isEdge;
+ 
+     function showInstallBtn(show) {
+       var b = document.getElementById('install-btn');
+       if (b) b.style.display = show ? 'flex' : 'none';
+     }
+ 
++    // Кнопка видна завжди, поки додаток не встановлено
++    document.addEventListener('DOMContentLoaded', function () {
++      showInstallBtn(!isStandalone);
++    });
++
+     window.addEventListener('beforeinstallprompt', function (e) {
+       e.preventDefault();
+-      deferredInstallPrompt = e;
+-      showInstallBtn(!isStandalone);
++      deferredInstallPrompt = e;   // тепер встановлення можливе в один клік
+     });
+     window.addEventListener('appinstalled', function () {
+       deferredInstallPrompt = null;
+       showInstallBtn(false);
+     });
+-    document.addEventListener('DOMContentLoaded', function () {
+-      // На iPhone/iPad автоматичного вікна встановлення немає — показуємо підказку
+-      if (isIOS && !isStandalone) showInstallBtn(true);
+-      if (deferredInstallPrompt && !isStandalone) showInstallBtn(true);
+-    });
+ 
+     async function installApp() {
++      // 1. Браузер дозволив встановлення в один клік
+       if (deferredInstallPrompt) {
+         deferredInstallPrompt.prompt();
+         var choice = await deferredInstallPrompt.userChoice;
+@@ -1247,11 +1252,24 @@
+         if (choice && choice.outcome === 'accepted') showInstallBtn(false);
+         return;
+       }
++      // 2. Інакше — підказка для конкретного браузера
++      var msg;
+       if (isIOS) {
+-        alert('Щоб встановити SoundWave на iPhone/iPad:\n\n1. Натисни кнопку «Поділитися» (квадрат зі стрілкою) у Safari\n2. Обери «На екран «Додому»»\n3. Натисни «Додати»');
++        msg = 'Щоб встановити SoundWave на iPhone/iPad:\n\n1. Відкрий сайт у Safari\n2. Натисни «Поділитися» (квадрат зі стрілкою)\n3. Обери «На екран «Додому»» і натисни «Додати»';
++      } else if (isAndroid && isFirefox) {
++        msg = 'Відкрий меню Firefox (⋮) і обери «Установити».';
++      } else if (isAndroid) {
++        msg = 'Відкрий меню браузера (⋮) і обери «Установити додаток» або «Додати на головний екран».';
++      } else if (isEdge) {
++        msg = 'Щоб встановити SoundWave в Microsoft Edge:\n\n1. Натисни «⋯» (три крапки) праворуч угорі\n2. Обери «Додатки»\n3. Натисни «Установити цей сайт як додаток»';
++      } else if (isChrome) {
++        msg = 'Щоб встановити SoundWave в Chrome:\n\n1. Натисни «⋮» (три крапки) праворуч угорі\n2. Обери «Трансляція, збереження й поширення»\n3. Натисни «Установити сторінку як додаток»\n\nАбо натисни іконку встановлення в кінці адресного рядка.';
++      } else if (isFirefox) {
++        msg = 'Firefox на комп’ютері не вміє встановлювати сайти як додатки. Відкрий SoundWave в Chrome або Edge.';
+       } else {
+-        alert('Щоб встановити додаток, відкрий меню браузера (⋮) і обери «Встановити додаток» або «Додати на головний екран».');
++        msg = 'У Safari на Mac: меню «Файл» → «Додати до Dock». В інших браузерах шукай пункт «Установити додаток» у меню.';
+       }
++      alert(msg);
+     }
+   </script>
+ </body>
+
+commit d75a46baf88742e5745d38f73bef891c89b41d57
+Author: User <user@example.com>
+Date:   Sun Oct 4 00:24:37 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 74d5b57..cb39ede 100644
+--- a/index.html
++++ b/index.html
+@@ -5,11 +5,20 @@
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <title>SoundWave — Музична платформа</title>
+   <meta name="description" content="SoundWave — сучасна музична платформа для прослуховування та відкриття нової музики. Слухай треки, відкривай нових артистів та насолоджуйся звуком." />
++  <!-- PWA: встановлення як додаток -->
++  <link rel="manifest" href="manifest.webmanifest" />
++  <meta name="theme-color" content="#0a0a0f" />
++  <link rel="icon" type="image/png" href="icons/icon-192.png" />
++  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
++  <meta name="mobile-web-app-capable" content="yes" />
++  <meta name="apple-mobile-web-app-capable" content="yes" />
++  <meta name="apple-mobile-web-app-title" content="SoundWave" />
++  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+   <link rel="preconnect" href="https://fonts.googleapis.com" />
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+-  <link rel="stylesheet" href="style.css" />
+-  <link rel="stylesheet" href="auth.css" />
++  <link rel="stylesheet" href="style.css?v=8" />
++  <link rel="stylesheet" href="auth.css?v=8" />
+   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+   <script type="text/javascript">
+      (function(){
+@@ -123,6 +132,12 @@
+         <input type="text" id="search-input" placeholder="Шукати треки, артистів..." oninput="handleSearch(this.value)" />
+       </div>
+       <div class="topbar-right">
++        <button class="install-btn" id="install-btn" onclick="installApp()" title="Встановити як додаток" style="display:none">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
++          </svg>
++          <span>Встановити</span>
++        </button>
+         <button class="upload-btn" id="upload-btn" onclick="document.getElementById('file-upload').click()">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+             <polyline points="16 16 12 12 8 16"/>
+@@ -1186,9 +1201,58 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=7"></script>
+-  <script src="app.js?v=7"></script>
+-  <script src="auth.js?v=7"></script>
+-  <script src="messages.js?v=7"></script>
++  <script src="storage.js?v=8"></script>
++  <script src="app.js?v=8"></script>
++  <script src="auth.js?v=8"></script>
++  <script src="messages.js?v=8"></script>
++
++  <script>
++    // ===== PWA: service worker + кнопка "Встановити" =====
++    if ('serviceWorker' in navigator) {
++      window.addEventListener('load', function () {
++        navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('[PWA] sw:', e); });
++      });
++    }
++
++    var deferredInstallPrompt = null;
++    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
++    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
++                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
++
++    function showInstallBtn(show) {
++      var b = document.getElementById('install-btn');
++      if (b) b.style.display = show ? 'flex' : 'none';
++    }
++
++    window.addEventListener('beforeinstallprompt', function (e) {
++      e.preventDefault();
++      deferredInstallPrompt = e;
++      showInstallBtn(!isStandalone);
++    });
++    window.addEventListener('appinstalled', function () {
++      deferredInstallPrompt = null;
++      showInstallBtn(false);
++    });
++    document.addEventListener('DOMContentLoaded', function () {
++      // На iPhone/iPad автоматичного вікна встановлення немає — показуємо підказку
++      if (isIOS && !isStandalone) showInstallBtn(true);
++      if (deferredInstallPrompt && !isStandalone) showInstallBtn(true);
++    });
++
++    async function installApp() {
++      if (deferredInstallPrompt) {
++        deferredInstallPrompt.prompt();
++        var choice = await deferredInstallPrompt.userChoice;
++        deferredInstallPrompt = null;
++        if (choice && choice.outcome === 'accepted') showInstallBtn(false);
++        return;
++      }
++      if (isIOS) {
++        alert('Щоб встановити SoundWave на iPhone/iPad:\n\n1. Натисни кнопку «Поділитися» (квадрат зі стрілкою) у Safari\n2. Обери «На екран «Додому»»\n3. Натисни «Додати»');
++      } else {
++        alert('Щоб встановити додаток, відкрий меню браузера (⋮) і обери «Встановити додаток» або «Додати на головний екран».');
++      }
++    }
++  </script>
+ </body>
+ </html>
+
+commit ee50f8c79ab4a6ae757ff3d563628fbfac3bf89a
+Author: User <user@example.com>
+Date:   Sat Oct 3 20:20:34 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 25d5cb5..74d5b57 100644
+--- a/index.html
++++ b/index.html
+@@ -86,6 +86,13 @@
+         </svg>
+         Спільнота
+       </a>
++      <a href="#" class="nav-item" id="nav-messages" onclick="showSection('messages', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
++        </svg>
++        Повідомлення
++        <span class="nav-badge" id="msg-badge" style="display:none">0</span>
++      </a>
+     </nav>
+ 
+     <div class="sidebar-playlists-header">
+@@ -525,6 +532,7 @@
+           </button>
+           <h1 id="cp-name" style="margin-top:12px;">Плейлист</h1>
+           <p class="section-subtitle" id="cp-owner"></p>
++          <div id="cp-write-slot" style="margin-top:8px;"></div>
+           <p class="section-subtitle" id="cp-desc"></p>
+           <button class="playlist-play-all-btn" onclick="playCommunityPlaylist()" style="margin-top:12px;">
+             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
+@@ -534,6 +542,47 @@
+         <div class="tracks-list-full" id="cp-tracks-list"></div>
+       </section>
+ 
++      <!-- MESSAGES SECTION -->
++      <section class="section" id="section-messages">
++        <div class="msg-guest" id="msg-guest" style="display:none">
++          <div class="msg-guest-icon">💬</div>
++          <h2>Повідомлення</h2>
++          <p>Увійди в акаунт, щоб писати іншим користувачам.</p>
++          <button class="msg-write-btn" onclick="openAuth('login')">Увійти</button>
++        </div>
++        <div class="msg-layout" id="msg-layout">
++          <aside class="msg-sidebar">
++            <div class="msg-sidebar-head">
++              <h2>💬 Повідомлення</h2>
++              <input type="text" id="msg-search" class="msg-search" placeholder="Знайти користувача за іменем..." autocomplete="off" oninput="msgOnSearch(this.value)" />
++            </div>
++            <div class="msg-conv-list" id="msg-conv-list"></div>
++          </aside>
++          <div class="msg-chat" id="msg-chat">
++            <div class="msg-empty" id="msg-empty">
++              <div class="msg-empty-icon">✉️</div>
++              <p>Обери розмову або знайди користувача, щоб написати йому</p>
++            </div>
++            <div class="msg-chat-inner" id="msg-chat-inner" style="display:none">
++              <header class="msg-chat-head">
++                <button class="msg-back" onclick="msgCloseChat()" title="Назад">
++                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
++                </button>
++                <div id="msg-chat-avatar"></div>
++                <div class="msg-chat-title" id="msg-chat-name"></div>
++              </header>
++              <div class="msg-thread" id="msg-thread"></div>
++              <div class="msg-compose">
++                <textarea id="msg-input" rows="1" maxlength="2000" placeholder="Напиши повідомлення..." onkeydown="msgInputKey(event)" oninput="msgAutoGrow(this)"></textarea>
++                <button class="msg-send" id="msg-send-btn" onclick="msgSend()" title="Надіслати">
++                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
++                </button>
++              </div>
++            </div>
++          </div>
++        </div>
++      </section>
++
+       <section class="section" id="section-search">
+         <div class="section-header">
+           <h1>Результати пошуку</h1>
+@@ -1137,8 +1186,9 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=6"></script>
+-  <script src="app.js?v=6"></script>
+-  <script src="auth.js?v=6"></script>
++  <script src="storage.js?v=7"></script>
++  <script src="app.js?v=7"></script>
++  <script src="auth.js?v=7"></script>
++  <script src="messages.js?v=7"></script>
+ </body>
+ </html>
+
+commit 805e844c6ff5b7ebb067f5d3b37518fca92df4f9
+Author: User <user@example.com>
+Date:   Sat Oct 3 18:01:40 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 547d8e0..25d5cb5 100644
+--- a/index.html
++++ b/index.html
+@@ -1,4 +1,4 @@
+-<!DOCTYPE html>
++﻿<!DOCTYPE html>
+ <html lang="uk">
+ <head>
+   <meta charset="UTF-8" />
+@@ -451,58 +451,67 @@
+       </section>
+ 
+       <!-- SEARCH RESULTS -->
+-      <!-- COMMUNITY SECTION -->
++      <!-- COMMUNITY SECTION — Instagram-style -->
+       <section class="section" id="section-community">
+-        <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
++
++        <!-- Stories-style playlists bar -->
++        <div class="comm-stories-bar" id="comm-stories-bar">
++          <div class="comm-stories-scroll" id="comm-stories-scroll">
++            <!-- JS fills playlist circles here -->
++          </div>
++          <button class="comm-stories-arrow comm-stories-arrow--right" id="comm-stories-arrow-r" onclick="scrollStoriesRight()" aria-label="Далі">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
++          </button>
++        </div>
++
++        <!-- Tabs -->
++        <div class="comm-tabs">
++          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
++            Треки
++          </button>
++          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
++            Плейлисти
++          </button>
++          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
++            Стрічка
++          </button>
++        </div>
++
++        <!-- Create post bar (for media tab) -->
++        <div class="comm-create-bar" id="comm-create-bar" style="display:none">
++          <div class="comm-create-avatar" id="comm-create-avatar">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
++          </div>
++          <input type="text" id="media-caption" maxlength="300" placeholder="Що нового?" class="comm-create-input" />
++          <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
++          <div class="comm-create-actions">
++            <button class="comm-create-attach" onclick="document.getElementById('media-file').click()" title="Додати фото/відео">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
++            </button>
++            <span id="media-file-name" class="comm-create-filename"></span>
++            <button class="comm-create-publish" id="media-publish-btn" onclick="publishMedia()">Поділитися</button>
++          </div>
++        </div>
++
++        <!-- Header with publish button -->
++        <div class="comm-section-top" id="comm-section-top">
+           <div>
+             <h1>🌍 Спільнота</h1>
+             <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
+           </div>
+           <button class="upload-btn" onclick="showSection('mp3tag', document.getElementById('nav-mp3tag'))">
+-            Опублікувати трек
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
++            Опублікувати
+           </button>
+         </div>
+-        <style>
+-          .comm-tabs { display:flex; gap:8px; margin:4px 0 18px; }
+-          .comm-tab { padding:9px 20px; border-radius:100px; border:1px solid var(--border); background:var(--bg-elevated); color:var(--text-secondary); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:var(--transition); }
+-          .comm-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+-          .comm-pl-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:18px; }
+-          .comm-pl-card { cursor:pointer; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; padding:12px; transition:var(--transition); }
+-          .comm-pl-card:hover { border-color:var(--accent); transform:translateY(-3px); }
+-          .comm-pl-cover { width:100%; aspect-ratio:1; border-radius:10px; overflow:hidden; margin-bottom:10px; }
+-          .comm-pl-cover img { width:100%; height:100%; object-fit:cover; display:block; }
+-          .comm-pl-name { font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+-          .comm-pl-owner { font-size:12px; color:var(--accent); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+-          .comm-pl-count { font-size:11px; color:var(--text-muted); margin-top:2px; }
+-          .media-upload-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px; padding:14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; }
+-          .media-upload-bar input[type="text"] { flex:1; min-width:180px; padding:10px 14px; border-radius:100px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); font-family:inherit; font-size:13px; }
+-          .media-file-name { font-size:12px; color:var(--text-muted); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+-          .comm-media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
+-          .comm-media-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+-          .comm-media-box { background:#000; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
+-          .comm-media-box img, .comm-media-box video { width:100%; height:100%; object-fit:contain; display:block; }
+-          .comm-media-info { padding:12px 14px; }
+-          .comm-media-caption { font-size:14px; margin-bottom:8px; word-break:break-word; }
+-          .comm-media-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); }
+-          .comm-media-owner { color:var(--accent); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+-          .comm-media-del { margin-top:10px; background:none; border:1px solid var(--border); color:var(--text-muted); border-radius:100px; padding:5px 12px; font-size:12px; cursor:pointer; font-family:inherit; }
+-          .comm-media-del:hover { color:#e05574; border-color:#e05574; }
+-        </style>
+-        <div class="comm-tabs">
+-          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">🎵 Треки</button>
+-          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">📂 Плейлисти</button>
+-          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">🖼️ Фото і відео</button>
+-        </div>
++
++        <!-- Tab content panes -->
+         <div class="tracks-list-full" id="community-list"></div>
+         <div id="community-playlists-list" style="display:none"></div>
+         <div id="community-media-panel" style="display:none">
+-          <div class="media-upload-bar">
+-            <input type="text" id="media-caption" maxlength="300" placeholder="Підпис (необов’язково)" />
+-            <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
+-            <button class="comm-tab" onclick="document.getElementById('media-file').click()">📎 Обрати фото/відео</button>
+-            <span id="media-file-name" class="media-file-name"></span>
+-            <button class="comm-tab active" id="media-publish-btn" onclick="publishMedia()">Опублікувати</button>
+-          </div>
+           <div id="community-media-list"></div>
+         </div>
+       </section>
+
+commit b40fec858fb7f7c689351072f209fc163ae5f0b1
+Author: User <user@example.com>
+Date:   Sat Oct 3 15:41:55 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 24cee15..547d8e0 100644
+--- a/index.html
++++ b/index.html
+@@ -1128,8 +1128,8 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=5"></script>
+-  <script src="app.js?v=5"></script>
+-  <script src="auth.js?v=5"></script>
++  <script src="storage.js?v=6"></script>
++  <script src="app.js?v=6"></script>
++  <script src="auth.js?v=6"></script>
+ </body>
+ </html>
+
+commit 0f3e51a8074c192c0733991673f3993460b43962
+Author: User <user@example.com>
+Date:   Sat Oct 3 15:33:26 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 519e863..24cee15 100644
+--- a/index.html
++++ b/index.html
+@@ -474,13 +474,37 @@
+           .comm-pl-name { font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+           .comm-pl-owner { font-size:12px; color:var(--accent); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+           .comm-pl-count { font-size:11px; color:var(--text-muted); margin-top:2px; }
++          .media-upload-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px; padding:14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; }
++          .media-upload-bar input[type="text"] { flex:1; min-width:180px; padding:10px 14px; border-radius:100px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); font-family:inherit; font-size:13px; }
++          .media-file-name { font-size:12px; color:var(--text-muted); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
++          .comm-media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
++          .comm-media-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
++          .comm-media-box { background:#000; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
++          .comm-media-box img, .comm-media-box video { width:100%; height:100%; object-fit:contain; display:block; }
++          .comm-media-info { padding:12px 14px; }
++          .comm-media-caption { font-size:14px; margin-bottom:8px; word-break:break-word; }
++          .comm-media-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); }
++          .comm-media-owner { color:var(--accent); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
++          .comm-media-del { margin-top:10px; background:none; border:1px solid var(--border); color:var(--text-muted); border-radius:100px; padding:5px 12px; font-size:12px; cursor:pointer; font-family:inherit; }
++          .comm-media-del:hover { color:#e05574; border-color:#e05574; }
+         </style>
+         <div class="comm-tabs">
+           <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">🎵 Треки</button>
+           <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">📂 Плейлисти</button>
++          <button class="comm-tab" id="comm-tab-media" onclick="switchCommunityTab('media')">🖼️ Фото і відео</button>
+         </div>
+         <div class="tracks-list-full" id="community-list"></div>
+         <div id="community-playlists-list" style="display:none"></div>
++        <div id="community-media-panel" style="display:none">
++          <div class="media-upload-bar">
++            <input type="text" id="media-caption" maxlength="300" placeholder="Підпис (необов’язково)" />
++            <input type="file" id="media-file" accept="image/*,video/*" style="display:none" onchange="onMediaFileChosen(this)" />
++            <button class="comm-tab" onclick="document.getElementById('media-file').click()">📎 Обрати фото/відео</button>
++            <span id="media-file-name" class="media-file-name"></span>
++            <button class="comm-tab active" id="media-publish-btn" onclick="publishMedia()">Опублікувати</button>
++          </div>
++          <div id="community-media-list"></div>
++        </div>
+       </section>
+ 
+       <!-- COMMUNITY PLAYLIST VIEW -->
+@@ -1104,8 +1128,8 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=4"></script>
+-  <script src="app.js?v=4"></script>
+-  <script src="auth.js?v=4"></script>
++  <script src="storage.js?v=5"></script>
++  <script src="app.js?v=5"></script>
++  <script src="auth.js?v=5"></script>
+ </body>
+ </html>
+
+commit bbd56589340ac63b8e18a8f32f148e1c892863a3
+Author: User <user@example.com>
+Date:   Sat Oct 3 15:25:31 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 6f81e1e..519e863 100644
+--- a/index.html
++++ b/index.html
+@@ -257,6 +257,12 @@
+                   <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
+                   Грати всі
+                 </button>
++                <button class="playlist-action-btn" id="pv-publish-btn" onclick="publishCurrentPlaylist()" title="Показати плейлист у розділі Спільнота" style="width:auto; padding:0 16px; border-radius:100px; gap:6px; font-size:13px; font-weight:600;">
++                  🌍 <span id="pv-publish-label">Опублікувати</span>
++                </button>
++                <button class="playlist-action-btn danger" id="pv-unpublish-btn" onclick="unpublishCurrentPlaylist()" title="Зняти з публікації" style="display:none; width:auto; padding:0 16px; border-radius:100px; font-size:13px; font-weight:600;">
++                  Зняти
++                </button>
+                 <button class="playlist-action-btn" onclick="openEditPlaylist()" title="Редагувати">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                 </button>
+@@ -456,7 +462,43 @@
+             Опублікувати трек
+           </button>
+         </div>
++        <style>
++          .comm-tabs { display:flex; gap:8px; margin:4px 0 18px; }
++          .comm-tab { padding:9px 20px; border-radius:100px; border:1px solid var(--border); background:var(--bg-elevated); color:var(--text-secondary); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:var(--transition); }
++          .comm-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
++          .comm-pl-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:18px; }
++          .comm-pl-card { cursor:pointer; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; padding:12px; transition:var(--transition); }
++          .comm-pl-card:hover { border-color:var(--accent); transform:translateY(-3px); }
++          .comm-pl-cover { width:100%; aspect-ratio:1; border-radius:10px; overflow:hidden; margin-bottom:10px; }
++          .comm-pl-cover img { width:100%; height:100%; object-fit:cover; display:block; }
++          .comm-pl-name { font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
++          .comm-pl-owner { font-size:12px; color:var(--accent); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
++          .comm-pl-count { font-size:11px; color:var(--text-muted); margin-top:2px; }
++        </style>
++        <div class="comm-tabs">
++          <button class="comm-tab active" id="comm-tab-tracks" onclick="switchCommunityTab('tracks')">🎵 Треки</button>
++          <button class="comm-tab" id="comm-tab-playlists" onclick="switchCommunityTab('playlists')">📂 Плейлисти</button>
++        </div>
+         <div class="tracks-list-full" id="community-list"></div>
++        <div id="community-playlists-list" style="display:none"></div>
++      </section>
++
++      <!-- COMMUNITY PLAYLIST VIEW -->
++      <section class="section" id="section-community-playlist">
++        <div class="section-header">
++          <button class="playlist-back-btn" onclick="showSection('community', document.getElementById('nav-community')); switchCommunityTab('playlists')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
++            Назад
++          </button>
++          <h1 id="cp-name" style="margin-top:12px;">Плейлист</h1>
++          <p class="section-subtitle" id="cp-owner"></p>
++          <p class="section-subtitle" id="cp-desc"></p>
++          <button class="playlist-play-all-btn" onclick="playCommunityPlaylist()" style="margin-top:12px;">
++            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
++            Грати всі
++          </button>
++        </div>
++        <div class="tracks-list-full" id="cp-tracks-list"></div>
+       </section>
+ 
+       <section class="section" id="section-search">
+@@ -1062,8 +1104,8 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js?v=3"></script>
+-  <script src="app.js?v=3"></script>
+-  <script src="auth.js?v=3"></script>
++  <script src="storage.js?v=4"></script>
++  <script src="app.js?v=4"></script>
++  <script src="auth.js?v=4"></script>
+ </body>
+ </html>
+
+commit c7e8a5fdcf857f3c5525a1784508d5c9c90dc467
+Author: User <user@example.com>
+Date:   Sat Oct 3 14:55:52 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 98c7646..6f81e1e 100644
+--- a/index.html
++++ b/index.html
+@@ -1062,8 +1062,8 @@
+     </div>
+   </div>
+ 
+-  <script src="storage.js"></script>
+-  <script src="app.js"></script>
+-  <script src="auth.js"></script>
++  <script src="storage.js?v=3"></script>
++  <script src="app.js?v=3"></script>
++  <script src="auth.js?v=3"></script>
+ </body>
+ </html>
+
+commit 7479dc6848d97931fe4e1ff72d60f6ac784137b5
+Author: User <user@example.com>
+Date:   Sat Oct 3 14:45:48 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 5037b83..98c7646 100644
+--- a/index.html
++++ b/index.html
+@@ -445,6 +445,20 @@
+       </section>
+ 
+       <!-- SEARCH RESULTS -->
++      <!-- COMMUNITY SECTION -->
++      <section class="section" id="section-community">
++        <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
++          <div>
++            <h1>🌍 Спільнота</h1>
++            <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
++          </div>
++          <button class="upload-btn" onclick="showSection('mp3tag', document.getElementById('nav-mp3tag'))">
++            Опублікувати трек
++          </button>
++        </div>
++        <div class="tracks-list-full" id="community-list"></div>
++      </section>
++
+       <section class="section" id="section-search">
+         <div class="section-header">
+           <h1>Результати пошуку</h1>
+
+commit d37e9e17e4b0591bab6e32f6a3a317972e68fe43
+Author: User <user@example.com>
+Date:   Sat Oct 3 14:26:45 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 7bf8f19..5037b83 100644
+--- a/index.html
++++ b/index.html
+@@ -86,12 +86,6 @@
+         </svg>
+         Спільнота
+       </a>
+-      <a href="#" class="nav-item" id="nav-publish" onclick="showSection('publish', this)">
+-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+-        </svg>
+-        Опублікувати
+-      </a>
+     </nav>
+ 
+     <div class="sidebar-playlists-header">
+@@ -423,6 +417,22 @@
+               <input type="text" id="mp3tag-genre" placeholder="Введи жанр або альбом..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
+             </div>
+             
++            <div class="ext-save-field" style="margin-bottom:15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
++              <div>
++                <label style="margin:0; font-weight: 500;">Публічний трек 🌍</label>
++                <p style="margin: 4px 0 0; font-size: 11px; color: var(--text-muted);">Інші користувачі зможуть слухати цей трек</p>
++              </div>
++              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
++                <input type="checkbox" id="mp3tag-public" style="opacity: 0; width: 0; height: 0;">
++                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-hover); transition: .4s; border-radius: 24px;"></span>
++              </label>
++            </div>
++            
++            <style>
++              #mp3tag-public:checked + .slider { background-color: var(--accent); }
++              .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
++              #mp3tag-public:checked + .slider:before { transform: translateX(20px); }
++            </style>
+ 
+             <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
+               <button class="upload-btn" style="flex:1" onclick="saveMp3Tag()">
+@@ -434,25 +444,6 @@
+         </div>
+       </section>
+ 
+-      <!-- COMMUNITY SECTION -->
+-      <section class="section" id="section-community">
+-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+-          <div>
+-            <h1>🌍 Спільнота</h1>
+-            <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
+-          </div>
+-          <button class="upload-btn" onclick="openPublishFromLibraryModal()">
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+-              <polyline points="17 8 12 3 7 8"></polyline>
+-              <line x1="12" y1="3" x2="12" y2="15"></line>
+-            </svg>
+-            Опублікувати свої
+-          </button>
+-        </div>
+-        <div class="tracks-list-full" id="community-list"></div>
+-      </section>
+-
+       <!-- SEARCH RESULTS -->
+       <section class="section" id="section-search">
+         <div class="section-header">
+@@ -462,39 +453,6 @@
+         <div class="tracks-list-full" id="search-list"></div>
+       </section>
+ 
+-      <!-- PUBLISH SECTION -->
+-      <section class="section" id="section-publish">
+-        <div class="section-header">
+-          <h1>Створити пост</h1>
+-          <p class="section-subtitle">Встав посилання на фото, відео або музику</p>
+-        </div>
+-        <div class="publish-container" style="background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); max-width: 600px; margin: 0 auto;">
+-          <div class="publish-field" style="margin-bottom: 20px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Посилання (URL на медіа)</label>
+-            <input type="text" id="publish-url" placeholder="https://..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;" />
+-          </div>
+-          <div class="publish-field" style="margin-bottom: 20px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Опис / Текст поста</label>
+-            <textarea id="publish-title" placeholder="Про що цей пост?" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; resize: none; box-sizing: border-box;"></textarea>
+-          </div>
+-          <div class="publish-field" style="margin-bottom: 20px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Автор (Виконавець)</label>
+-            <input type="text" id="publish-artist" placeholder="Твоє ім'я або виконавець..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;" />
+-          </div>
+-          <div class="publish-field" style="margin-bottom: 24px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Тип поста</label>
+-            <select id="publish-type" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;">
+-              <option value="audio">🎵 Музика</option>
+-              <option value="video">🎥 Відео</option>
+-              <option value="image">🖼 Фото</option>
+-            </select>
+-          </div>
+-          <button class="publish-btn" onclick="publishMedia()" style="width: 100%; padding: 14px; border-radius: 8px; background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s;">
+-            Опублікувати
+-          </button>
+-        </div>
+-      </section>
+-
+     </div>
+   </main>
+ 
+@@ -1090,27 +1048,6 @@
+     </div>
+   </div>
+ 
+-  <!-- Publish from Library Modal -->
+-  <div class="accsw-overlay" id="publish-library-overlay" onclick="closePublishLibraryModal()">
+-    <div class="accsw-modal" onclick="event.stopPropagation()">
+-      <div class="accsw-header">
+-        <h3>Опублікувати з Бібліотеки</h3>
+-        <button class="accsw-close" onclick="closePublishLibraryModal()">
+-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+-        </button>
+-      </div>
+-      <div class="profile-edit-body" style="padding: 20px; max-height: 400px; overflow-y: auto;">
+-        <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">Обери трек зі своєї бібліотеки, щоб опублікувати його для всіх у Спільноті.</p>
+-        <div id="publish-library-list" style="display: flex; flex-direction: column; gap: 10px;">
+-          <!-- JS will populate -->
+-        </div>
+-      </div>
+-      <div class="accsw-footer" style="justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border);">
+-        <button class="playlist-modal-cancel" onclick="closePublishLibraryModal()">Скасувати</button>
+-      </div>
+-    </div>
+-  </div>
+-
+   <script src="storage.js"></script>
+   <script src="app.js"></script>
+   <script src="auth.js"></script>
+
+commit a2d0fcc8bc5614b2a0d2923751cdc159eaa974f9
+Author: User <user@example.com>
+Date:   Sat Oct 3 13:57:25 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index c914545..7bf8f19 100644
+--- a/index.html
++++ b/index.html
+@@ -465,25 +465,29 @@
+       <!-- PUBLISH SECTION -->
+       <section class="section" id="section-publish">
+         <div class="section-header">
+-          <h1>Опублікувати</h1>
+-          <p class="section-subtitle">Завантаж свою музику або відео на платформу</p>
++          <h1>Створити пост</h1>
++          <p class="section-subtitle">Встав посилання на фото, відео або музику</p>
+         </div>
+         <div class="publish-container" style="background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); max-width: 600px; margin: 0 auto;">
+           <div class="publish-field" style="margin-bottom: 20px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Файл (Аудіо або Відео)</label>
+-            <input type="file" id="publish-file" accept="audio/*,video/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Посилання (URL на медіа)</label>
++            <input type="text" id="publish-url" placeholder="https://..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;" />
+           </div>
+           <div class="publish-field" style="margin-bottom: 20px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Назва треку/відео</label>
+-            <input type="text" id="publish-title" placeholder="Введіть назву..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Опис / Текст поста</label>
++            <textarea id="publish-title" placeholder="Про що цей пост?" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; resize: none; box-sizing: border-box;"></textarea>
+           </div>
+           <div class="publish-field" style="margin-bottom: 20px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Виконавець</label>
+-            <input type="text" id="publish-artist" placeholder="Введіть виконавця..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Автор (Виконавець)</label>
++            <input type="text" id="publish-artist" placeholder="Твоє ім'я або виконавець..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;" />
+           </div>
+           <div class="publish-field" style="margin-bottom: 24px;">
+-            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Обкладинка (опціонально)</label>
+-            <input type="file" id="publish-cover" accept="image/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Тип поста</label>
++            <select id="publish-type" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none; box-sizing: border-box;">
++              <option value="audio">🎵 Музика</option>
++              <option value="video">🎥 Відео</option>
++              <option value="image">🖼 Фото</option>
++            </select>
+           </div>
+           <button class="publish-btn" onclick="publishMedia()" style="width: 100%; padding: 14px; border-radius: 8px; background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s;">
+             Опублікувати
+
+commit 403fefad50c04d20afd48f2506ff695c5f364cc3
+Author: User <user@example.com>
+Date:   Sat Oct 3 01:24:23 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 3403102..c914545 100644
+--- a/index.html
++++ b/index.html
+@@ -423,22 +423,6 @@
+               <input type="text" id="mp3tag-genre" placeholder="Введи жанр або альбом..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
+             </div>
+             
+-            <div class="ext-save-field" style="margin-bottom:15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+-              <div>
+-                <label style="margin:0; font-weight: 500;">Публічний трек 🌍</label>
+-                <p style="margin: 4px 0 0; font-size: 11px; color: var(--text-muted);">Інші користувачі зможуть слухати цей трек</p>
+-              </div>
+-              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+-                <input type="checkbox" id="mp3tag-public" style="opacity: 0; width: 0; height: 0;">
+-                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-hover); transition: .4s; border-radius: 24px;"></span>
+-              </label>
+-            </div>
+-            
+-            <style>
+-              #mp3tag-public:checked + .slider { background-color: var(--primary); }
+-              .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+-              #mp3tag-public:checked + .slider:before { transform: translateX(20px); }
+-            </style>
+ 
+             <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
+               <button class="upload-btn" style="flex:1" onclick="saveMp3Tag()">
+@@ -450,6 +434,25 @@
+         </div>
+       </section>
+ 
++      <!-- COMMUNITY SECTION -->
++      <section class="section" id="section-community">
++        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
++          <div>
++            <h1>🌍 Спільнота</h1>
++            <p class="section-subtitle">Слухай публічні треки інших користувачів та поділися своїми</p>
++          </div>
++          <button class="upload-btn" onclick="openPublishFromLibraryModal()">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
++              <polyline points="17 8 12 3 7 8"></polyline>
++              <line x1="12" y1="3" x2="12" y2="15"></line>
++            </svg>
++            Опублікувати свої
++          </button>
++        </div>
++        <div class="tracks-list-full" id="community-list"></div>
++      </section>
++
+       <!-- SEARCH RESULTS -->
+       <section class="section" id="section-search">
+         <div class="section-header">
+@@ -1083,6 +1086,27 @@
+     </div>
+   </div>
+ 
++  <!-- Publish from Library Modal -->
++  <div class="accsw-overlay" id="publish-library-overlay" onclick="closePublishLibraryModal()">
++    <div class="accsw-modal" onclick="event.stopPropagation()">
++      <div class="accsw-header">
++        <h3>Опублікувати з Бібліотеки</h3>
++        <button class="accsw-close" onclick="closePublishLibraryModal()">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++        </button>
++      </div>
++      <div class="profile-edit-body" style="padding: 20px; max-height: 400px; overflow-y: auto;">
++        <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">Обери трек зі своєї бібліотеки, щоб опублікувати його для всіх у Спільноті.</p>
++        <div id="publish-library-list" style="display: flex; flex-direction: column; gap: 10px;">
++          <!-- JS will populate -->
++        </div>
++      </div>
++      <div class="accsw-footer" style="justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border);">
++        <button class="playlist-modal-cancel" onclick="closePublishLibraryModal()">Скасувати</button>
++      </div>
++    </div>
++  </div>
++
+   <script src="storage.js"></script>
+   <script src="app.js"></script>
+   <script src="auth.js"></script>
+
+commit d0df0a32a90c826f78a0f9c4b5cf7b8e84861954
+Author: User <user@example.com>
+Date:   Sat Oct 3 01:16:02 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index c1b6a38..3403102 100644
+--- a/index.html
++++ b/index.html
+@@ -86,6 +86,12 @@
+         </svg>
+         Спільнота
+       </a>
++      <a href="#" class="nav-item" id="nav-publish" onclick="showSection('publish', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
++        </svg>
++        Опублікувати
++      </a>
+     </nav>
+ 
+     <div class="sidebar-playlists-header">
+@@ -453,6 +459,35 @@
+         <div class="tracks-list-full" id="search-list"></div>
+       </section>
+ 
++      <!-- PUBLISH SECTION -->
++      <section class="section" id="section-publish">
++        <div class="section-header">
++          <h1>Опублікувати</h1>
++          <p class="section-subtitle">Завантаж свою музику або відео на платформу</p>
++        </div>
++        <div class="publish-container" style="background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); max-width: 600px; margin: 0 auto;">
++          <div class="publish-field" style="margin-bottom: 20px;">
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Файл (Аудіо або Відео)</label>
++            <input type="file" id="publish-file" accept="audio/*,video/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
++          </div>
++          <div class="publish-field" style="margin-bottom: 20px;">
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Назва треку/відео</label>
++            <input type="text" id="publish-title" placeholder="Введіть назву..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
++          </div>
++          <div class="publish-field" style="margin-bottom: 20px;">
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Виконавець</label>
++            <input type="text" id="publish-artist" placeholder="Введіть виконавця..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white; outline: none;" />
++          </div>
++          <div class="publish-field" style="margin-bottom: 24px;">
++            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Обкладинка (опціонально)</label>
++            <input type="file" id="publish-cover" accept="image/*" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: white;" />
++          </div>
++          <button class="publish-btn" onclick="publishMedia()" style="width: 100%; padding: 14px; border-radius: 8px; background: linear-gradient(90deg, #ff6b35, #f7931e); border: none; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s;">
++            Опублікувати
++          </button>
++        </div>
++      </section>
++
+     </div>
+   </main>
+ 
+
+commit 6d5036daef0a214e595674df7676ab8e76bb7281
+Author: User <user@example.com>
+Date:   Sat Oct 3 00:18:06 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index a63f857..c1b6a38 100644
+--- a/index.html
++++ b/index.html
+@@ -80,6 +80,12 @@
+         </svg>
+         MP3Tag Редактор
+       </a>
++      <a href="#" class="nav-item" id="nav-community" onclick="showSection('community', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/>
++        </svg>
++        Спільнота
++      </a>
+     </nav>
+ 
+     <div class="sidebar-playlists-header">
+@@ -411,6 +417,23 @@
+               <input type="text" id="mp3tag-genre" placeholder="Введи жанр або альбом..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
+             </div>
+             
++            <div class="ext-save-field" style="margin-bottom:15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
++              <div>
++                <label style="margin:0; font-weight: 500;">Публічний трек 🌍</label>
++                <p style="margin: 4px 0 0; font-size: 11px; color: var(--text-muted);">Інші користувачі зможуть слухати цей трек</p>
++              </div>
++              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
++                <input type="checkbox" id="mp3tag-public" style="opacity: 0; width: 0; height: 0;">
++                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-hover); transition: .4s; border-radius: 24px;"></span>
++              </label>
++            </div>
++            
++            <style>
++              #mp3tag-public:checked + .slider { background-color: var(--primary); }
++              .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
++              #mp3tag-public:checked + .slider:before { transform: translateX(20px); }
++            </style>
++
+             <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
+               <button class="upload-btn" style="flex:1" onclick="saveMp3Tag()">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:8px; vertical-align:text-bottom;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+
+commit b2b61ecec10d61fa3c5feea0b22965c64156dc5d
+Author: User <user@example.com>
+Date:   Fri Oct 2 23:59:07 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index f4e3984..a63f857 100644
+--- a/index.html
++++ b/index.html
+@@ -16,6 +16,7 @@
+         emailjs.init("P8m259Y8UzoliHUVK");
+      })();
+   </script>
++  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+ </head>
+ <body>
+   <!-- Sidebar -->
+
+commit b57e4b3bf4378b3804a07cd1f442baa2c50cfa6b
+Author: User <user@example.com>
+Date:   Fri Oct 2 23:36:33 2026 +0300
+
+    обновил стили auth.css
+
+diff --git a/index.html b/index.html
+index 98b7a92..f4e3984 100644
+--- a/index.html
++++ b/index.html
+@@ -660,6 +660,9 @@
+             </button>
+           </div>
+         </div>
++        <div style="text-align: right; margin-bottom: 12px;">
++          <a href="#" onclick="switchTab('forgot')" style="font-size: 13px; color: var(--text-muted); text-decoration: none;">Забули пароль?</a>
++        </div>
+         <div class="auth-error" id="login-error"></div>
+         <button type="submit" class="auth-submit" id="login-submit">
+           <span>Увійти</span>
+@@ -734,6 +737,69 @@
+         <p class="auth-switch">Вже є акаунт? <a href="#" onclick="switchTab('login')">Увійти</a></p>
+       </form>
+ 
++      <!-- FORGOT PASSWORD FORM -->
++      <form class="auth-form" id="form-forgot" onsubmit="handleForgot(event)">
++        <div class="auth-greeting">
++          <h2>Відновлення паролю 🔒</h2>
++          <p>Введи email, щоб скинути пароль</p>
++        </div>
++        <div class="auth-field">
++          <label for="forgot-email">Email</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
++              <polyline points="22,6 12,13 2,6"/>
++            </svg>
++            <input type="email" id="forgot-email" placeholder="твій@email.com" required />
++          </div>
++        </div>
++        <div class="auth-error" id="forgot-error"></div>
++        <button type="submit" class="auth-submit" id="forgot-submit">
++          <span>Надіслати код</span>
++        </button>
++        <p class="auth-switch">Згадали пароль? <a href="#" onclick="switchTab('login')">Увійти</a></p>
++      </form>
++
++      <!-- VERIFY RECOVERY CODE FORM -->
++      <form class="auth-form" id="form-forgot-verify" onsubmit="verifyForgotCode(event)">
++        <div style="text-align:center;margin-bottom:20px;">
++          <h3 style="font-size:18px;margin-bottom:8px;">Перевірка коду</h3>
++          <p style="color:var(--text-muted);font-size:13px;" id="forgot-verify-text">
++            Код відправлено на email
++          </p>
++        </div>
++        <div class="auth-field" style="margin-bottom:24px;">
++          <input type="text" id="forgot-code" placeholder="------" maxlength="6" style="text-align:center;font-size:24px;letter-spacing:8px;padding:12px;" required />
++        </div>
++        <div class="auth-error" id="forgot-code-error" style="text-align:center;margin-bottom:16px;"></div>
++        <button type="submit" class="auth-submit" id="forgot-verify-submit">
++          <span>Підтвердити</span>
++        </button>
++        <p class="auth-switch" style="margin-top:16px;"><a href="#" onclick="switchTab('forgot')">Змінити email</a></p>
++      </form>
++
++      <!-- NEW PASSWORD FORM -->
++      <form class="auth-form" id="form-new-password" onsubmit="handleNewPassword(event)">
++        <div class="auth-greeting">
++          <h2>Новий пароль 🔑</h2>
++          <p>Придумай новий надійний пароль</p>
++        </div>
++        <div class="auth-field">
++          <label for="new-password">Новий пароль</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
++              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
++            </svg>
++            <input type="password" id="new-password" placeholder="Мінімум 6 символів" required minlength="6" />
++          </div>
++        </div>
++        <div class="auth-error" id="new-password-error"></div>
++        <button type="submit" class="auth-submit" id="new-password-submit">
++          <span>Зберегти пароль</span>
++        </button>
++      </form>
++
+       <!-- VERIFY EMAIL FORM -->
+       <form class="auth-form" id="form-verify" onsubmit="verifyRegistrationCode(event)">
+         <div style="text-align:center;margin-bottom:20px;">
+
+commit 167349163a8b5ad519ec905c624c0b8207a5d61b
+Author: User <user@example.com>
+Date:   Fri Oct 2 20:33:51 2026 +0300
+
+    Initial commit
+
+diff --git a/index.html b/index.html
+new file mode 100644
+index 0000000..98b7a92
+--- /dev/null
++++ b/index.html
+@@ -0,0 +1,965 @@
++<!DOCTYPE html>
++<html lang="uk">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>SoundWave — Музична платформа</title>
++  <meta name="description" content="SoundWave — сучасна музична платформа для прослуховування та відкриття нової музики. Слухай треки, відкривай нових артистів та насолоджуйся звуком." />
++  <link rel="preconnect" href="https://fonts.googleapis.com" />
++  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
++  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
++  <link rel="stylesheet" href="style.css" />
++  <link rel="stylesheet" href="auth.css" />
++  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
++  <script type="text/javascript">
++     (function(){
++        emailjs.init("P8m259Y8UzoliHUVK");
++     })();
++  </script>
++</head>
++<body>
++  <!-- Sidebar -->
++  <aside class="sidebar" id="sidebar">
++    <div class="sidebar-logo">
++      <div class="logo-icon">
++        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
++          <circle cx="14" cy="14" r="14" fill="url(#logoGrad)"/>
++          <path d="M8 18V10l12 4-12 4z" fill="white"/>
++          <defs>
++            <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28">
++              <stop offset="0%" stop-color="#ff6b35"/>
++              <stop offset="100%" stop-color="#f7931e"/>
++            </linearGradient>
++          </defs>
++        </svg>
++      </div>
++      <span class="logo-text">SoundWave</span>
++    </div>
++
++    <nav class="sidebar-nav">
++      <a href="#" class="nav-item active" id="nav-home" onclick="showSection('home', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
++          <polyline points="9 22 9 12 15 12 15 22"/>
++        </svg>
++        Головна
++      </a>
++      <a href="#" class="nav-item" id="nav-explore" onclick="showSection('explore', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <circle cx="11" cy="11" r="8"/>
++          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
++        </svg>
++        Огляд
++      </a>
++      <a href="#" class="nav-item" id="nav-library" onclick="showSection('library', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M9 19V6l12-3v13"/>
++          <circle cx="6" cy="18" r="3"/>
++          <circle cx="18" cy="15" r="3"/>
++        </svg>
++        Бібліотека
++      </a>
++      <a href="#" class="nav-item" id="nav-liked" onclick="showSection('liked', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
++        </svg>
++        Вподобані
++      </a>
++      <a href="#" class="nav-item" id="nav-extractor" onclick="showSection('extractor', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.9L15 14"/>
++          <rect x="1" y="6" width="14" height="12" rx="2" ry="2"/>
++          <line x1="9" y1="12" x2="9" y2="12.01" stroke-linecap="round" stroke-width="3"/>
++        </svg>
++        Аудіо з відео
++      </a>
++      <a href="#" class="nav-item" id="nav-mp3tag" onclick="showSection('mp3tag', this)">
++        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
++        </svg>
++        MP3Tag Редактор
++      </a>
++    </nav>
++
++    <div class="sidebar-playlists-header">
++      <span class="sidebar-section-title" style="padding:0">ПЛЕЙЛИСТИ</span>
++      <button class="new-playlist-btn" id="new-playlist-btn" onclick="openCreatePlaylist()" title="Новий плейлист">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
++      </button>
++    </div>
++    <div class="playlists-list" id="playlists-list">
++      <div class="playlist-empty-hint" id="playlist-empty-hint">Натисни + щоб створити плейлист</div>
++    </div>
++  </aside>
++
++  <!-- Main Content -->
++  <main class="main-content">
++    <!-- Topbar -->
++    <header class="topbar">
++      <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleSidebar()">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
++          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
++        </svg>
++      </button>
++      <div class="search-bar">
++        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++          <circle cx="11" cy="11" r="8"/>
++          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
++        </svg>
++        <input type="text" id="search-input" placeholder="Шукати треки, артистів..." oninput="handleSearch(this.value)" />
++      </div>
++      <div class="topbar-right">
++        <button class="upload-btn" id="upload-btn" onclick="document.getElementById('file-upload').click()">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++            <polyline points="16 16 12 12 8 16"/>
++            <line x1="12" y1="12" x2="12" y2="21"/>
++            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
++          </svg>
++          Завантажити
++        </button>
++        <input type="file" id="file-upload" accept="audio/*" multiple style="display:none" onchange="handleFileUpload(this)" />
++        <div class="avatar" id="user-avatar">ЮЗ</div>
++      </div>
++    </header>
++
++    <!-- Sections -->
++    <div class="content-area">
++
++      <!-- HOME SECTION -->
++      <section class="section active" id="section-home">
++        <div class="section-header">
++          <h1>Привіт! 👋</h1>
++          <p class="section-subtitle">Що будемо слухати сьогодні?</p>
++        </div>
++
++        <div class="featured-banner" id="featured-banner" onclick="playTrackById(0)">
++          <div class="featured-bg" id="featured-bg"></div>
++          <div class="featured-content">
++            <div class="featured-badge">🔥 Популярне</div>
++            <h2 class="featured-title" id="featured-title">Neon Pulse</h2>
++            <p class="featured-artist" id="featured-artist">Aetherflux</p>
++            <div class="featured-meta">
++              <span>🎵 Electronic</span>
++              <span>3:42</span>
++              <span>128K прослуховувань</span>
++            </div>
++            <button class="featured-play-btn" onclick="event.stopPropagation(); playTrackById(0)">
++              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M5 3l14 9-14 9V3z"/></svg>
++              Слухати
++            </button>
++          </div>
++        </div>
++
++        <div class="section-block">
++          <div class="block-header">
++            <h2>Зараз популярно</h2>
++            <a href="#" class="see-all" onclick="showSection('explore', document.getElementById('nav-explore'))">Всі треки</a>
++          </div>
++          <div class="tracks-grid" id="trending-grid"></div>
++        </div>
++
++        <div class="section-block">
++          <div class="block-header">
++            <h2>Рекомендовані треки</h2>
++          </div>
++          <div class="tracks-list" id="recommended-list"></div>
++        </div>
++      </section>
++
++      <!-- EXPLORE SECTION -->
++      <section class="section" id="section-explore">
++        <div class="section-header">
++          <h1>Огляд</h1>
++          <p class="section-subtitle">🌐 Мільйони треків з iTunes &mdash; шукай будь-яку музику!</p>
++        </div>
++
++        <div class="genre-tags" id="genre-tags">
++          <button class="genre-tag active" onclick="filterByGenre('all', this)">🎶 Всі</button>
++          <button class="genre-tag" onclick="filterByGenre('electronic', this)">Electronic</button>
++          <button class="genre-tag" onclick="filterByGenre('chill', this)">✨ Chill</button>
++          <button class="genre-tag" onclick="filterByGenre('jazz', this)">🎷 Jazz</button>
++          <button class="genre-tag" onclick="filterByGenre('hiphop', this)">🎙 Hip-Hop</button>
++          <button class="genre-tag" onclick="filterByGenre('pop', this)">🌟 Pop</button>
++          <button class="genre-tag" onclick="filterByGenre('rock', this)">🤘 Rock</button>
++          <button class="genre-tag" onclick="filterByGenre('rnb', this)">🔥 R&amp;B</button>
++        </div>
++
++        <div class="tracks-list-full" id="explore-list"></div>
++      </section>
++
++      <!-- LIBRARY SECTION -->
++      <section class="section" id="section-library">
++        <div class="section-header">
++          <h1>Моя бібліотека</h1>
++          <p class="section-subtitle">Твої треки та завантажені файли</p>
++        </div>
++        <div class="upload-zone" id="upload-zone">
++          <div class="upload-zone-inner" id="upload-drop-zone">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
++              <polyline points="16 16 12 12 8 16"/>
++              <line x1="12" y1="12" x2="12" y2="21"/>
++              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
++            </svg>
++            <p>Перетягни аудіофайли сюди</p>
++            <span>або</span>
++            <button onclick="document.getElementById('file-upload').click()">Вибрати файли</button>
++          </div>
++        </div>
++        <div class="tracks-list-full" id="library-list">
++          <div class="empty-state" id="library-empty">
++            <span>🎵</span>
++            <p>Тут поки нічого немає. Завантаж свою музику!</p>
++          </div>
++        </div>
++      </section>
++
++      <!-- LIKED SECTION -->
++      <section class="section" id="section-liked">
++        <div class="section-header">
++          <h1>Вподобані треки</h1>
++          <p class="section-subtitle">Твої улюблені</p>
++        </div>
++        <div class="tracks-list-full" id="liked-list">
++          <div class="empty-state" id="liked-empty">
++            <span>❤️</span>
++            <p>Натисни ❤️ на треку, щоб додати його сюди</p>
++          </div>
++        </div>
++      </section>
++
++      <!-- PLAYLIST VIEW SECTION -->
++      <section class="section" id="section-playlist">
++        <div class="playlist-view-header">
++          <button class="playlist-back-btn" onclick="showSection('home', document.getElementById('nav-home'))">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
++            Назад
++          </button>
++          <div class="pv-hero">
++            <div id="pv-cover" class="playlist-view-cover gradient-cover" style="background:linear-gradient(135deg,#667eea,#764ba2)">
++              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" width="60" height="60">
++                <path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
++              </svg>
++            </div>
++            <div class="playlist-view-meta">
++              <span class="playlist-view-label">ПЛЕЙЛИСТ</span>
++              <h1 class="playlist-view-name" id="pv-name">Назва</h1>
++              <p class="playlist-view-desc" id="pv-desc"></p>
++              <div class="playlist-view-stats" id="pv-stats"></div>
++              <div class="playlist-view-actions">
++                <button class="playlist-play-all-btn" id="pv-play-btn" onclick="playPlaylistAll()">
++                  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 3l14 9-14 9V3z"/></svg>
++                  Грати всі
++                </button>
++                <button class="playlist-action-btn" onclick="openEditPlaylist()" title="Редагувати">
++                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
++                </button>
++                <button class="playlist-action-btn danger" onclick="deleteCurrentPlaylist()" title="Видалити">
++                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
++                </button>
++              </div>
++            </div>
++          </div>
++        </div>
++        <div class="tracks-list-full" id="playlist-tracks-list"></div>
++      </section>
++
++      <!-- EXTRACTOR SECTION -->
++      <section class="section" id="section-extractor">
++        <div class="section-header">
++          <h1>🎬 Аудіо з відео</h1>
++          <p class="section-subtitle">Завантаж відеофайл або встав пряме посилання — збережемо звук в лайках</p>
++        </div>
++
++        <!-- Tabs -->
++        <div class="ext-tabs">
++          <button class="ext-tab active" id="ext-tab-file" onclick="switchExtTab('file')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
++            Файл
++          </button>
++          <button class="ext-tab" id="ext-tab-url" onclick="switchExtTab('url')">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
++            Посилання
++          </button>
++        </div>
++
++        <!-- File panel -->
++        <div class="ext-panel active" id="ext-panel-file">
++          <div class="ext-drop-zone" id="ext-drop-zone" onclick="document.getElementById('ext-file-input').click()">
++            <div class="ext-drop-icon">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="52" height="52">
++                <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.9L15 14"/>
++                <rect x="1" y="6" width="14" height="12" rx="2" ry="2"/>
++              </svg>
++            </div>
++            <p class="ext-drop-title">Перетягни відео або аудіо файл сюди</p>
++            <p class="ext-drop-hint">MP4, WebM, MKV, AVI, MOV, MP3, WAV, FLAC — будь-який медіафайл</p>
++            <button class="ext-choose-btn" onclick="event.stopPropagation(); document.getElementById('ext-file-input').click()">Вибрати файл</button>
++            <input type="file" id="ext-file-input" accept="video/*,audio/*" style="display:none" onchange="handleExtractorFile(this)" />
++          </div>
++        </div>
++
++        <!-- URL panel -->
++        <div class="ext-panel" id="ext-panel-url">
++          <div class="ext-url-wrap">
++            <div class="ext-url-input-row">
++              <input type="url" id="ext-url-input" class="ext-url-input"
++                     placeholder="https://example.com/video.mp4"
++                     onkeydown="if(event.key==='Enter') loadExtractorUrl()" />
++              <button class="ext-url-btn" onclick="loadExtractorUrl()">
++                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
++                Завантажити
++              </button>
++            </div>
++            <div class="ext-url-note">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
++              <span>Підтримуються прямі посилання (.mp4, .webm). YouTube не підтримується через обмеження браузера.</span>
++            </div>
++          </div>
++        </div>
++
++        <!-- Preview (shown after loading) -->
++        <div class="ext-preview" id="ext-preview">
++          <div class="ext-media-wrap">
++            <video id="ext-video" controls controlsList="nodownload" preload="metadata"></video>
++          </div>
++          <div class="ext-save-card">
++            <div class="ext-save-cover" id="ext-save-cover">
++              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" width="40" height="40">
++                <path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
++              </svg>
++            </div>
++            <div class="ext-save-form">
++              <div class="ext-save-field">
++                <label>Назва треку</label>
++                <input type="text" id="ext-title" placeholder="Назва..." />
++              </div>
++              <div class="ext-save-field">
++                <label>Виконавець</label>
++                <input type="text" id="ext-artist" placeholder="Виконавець..." />
++              </div>
++              <div class="ext-save-checks">
++                <label class="ext-check-label">
++                  <input type="checkbox" id="ext-save-library" checked />
++                  Додати в бібліотеку
++                </label>
++                <label class="ext-check-label">
++                  <input type="checkbox" id="ext-save-liked" checked />
++                  Додати в вподобані ❤️
++                </label>
++              </div>
++              <button class="ext-save-btn" id="ext-save-btn" onclick="saveExtractedTrack()">
++                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
++                Зберегти трек
++              </button>
++            </div>
++          </div>
++        </div>
++
++        <!-- Saved tracks from extractor -->
++        <div class="section-block" id="ext-saved-block" style="display:none">
++          <div class="block-header">
++            <h2>Збережені з відео</h2>
++          </div>
++          <div class="tracks-list-full" id="ext-saved-list"></div>
++        </div>
++      </section>
++
++      <!-- MP3TAG SECTION -->
++      <section class="section" id="section-mp3tag">
++        <div class="section-header">
++          <h1>🏷️ MP3Tag Редактор</h1>
++          <p class="section-subtitle">Редагуй назви, виконавців та обкладинки своїх завантажених треків</p>
++        </div>
++        
++        <div class="mp3tag-container" style="display:flex; gap:20px; height: calc(100vh - 200px); min-height: 400px; flex-wrap: wrap;">
++          <!-- Left: Track list -->
++          <div class="mp3tag-list-col" style="flex: 1; min-width: 300px; background: var(--bg-card); border-radius: 12px; overflow-y: auto; padding: 12px; border: 1px solid var(--border);">
++            <div id="mp3tag-tracks-list">
++              <!-- JS will populate -->
++            </div>
++            <div class="empty-state" id="mp3tag-empty" style="display:none;">
++              <span>💽</span>
++              <p>У тебе немає завантажених треків. Завантаж їх у Бібліотеці!</p>
++            </div>
++          </div>
++          
++          <!-- Right: Editor -->
++          <div class="mp3tag-editor-col" id="mp3tag-editor-col" style="flex: 1; min-width: 300px; background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); display:flex; flex-direction:column; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
++            <div style="text-align: center; margin-bottom: 20px;">
++              <div id="mp3tag-cover-preview" style="width:140px; height:140px; border-radius:12px; background:var(--bg-elevated); margin:0 auto; overflow:hidden; position:relative; cursor:pointer;" onclick="document.getElementById('mp3tag-cover-input').click()">
++                <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); opacity:0; transition:0.2s;" class="hover-overlay">
++                   <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="30" height="30"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
++                </div>
++              </div>
++              <p style="font-size:12px; color:var(--text-muted); margin-top:12px;">Натисни, щоб змінити обкладинку</p>
++              <input type="file" id="mp3tag-cover-input" accept="image/*" style="display:none" onchange="handleMp3TagCoverUpload(this)" />
++            </div>
++            
++            <div class="ext-save-field" style="margin-bottom:15px;">
++              <label>Назва треку</label>
++              <input type="text" id="mp3tag-title" placeholder="Введи назву..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
++            </div>
++            
++            <div class="ext-save-field" style="margin-bottom:15px;">
++              <label>Виконавець</label>
++              <input type="text" id="mp3tag-artist" placeholder="Введи виконавця..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
++            </div>
++            
++            <div class="ext-save-field" style="margin-bottom:15px;">
++              <label>Альбом / Жанр</label>
++              <input type="text" id="mp3tag-genre" placeholder="Введи жанр або альбом..." style="width:100%; padding:10px; border-radius:8px; background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border); font-family: inherit;" />
++            </div>
++            
++            <div style="margin-top:auto; display:flex; gap:10px; padding-top:20px;">
++              <button class="upload-btn" style="flex:1" onclick="saveMp3Tag()">
++                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:8px; vertical-align:text-bottom;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
++                Зберегти теги
++              </button>
++            </div>
++          </div>
++        </div>
++      </section>
++
++      <!-- SEARCH RESULTS -->
++      <section class="section" id="section-search">
++        <div class="section-header">
++          <h1>Результати пошуку</h1>
++          <p class="section-subtitle" id="search-results-count"></p>
++        </div>
++        <div class="tracks-list-full" id="search-list"></div>
++      </section>
++
++    </div>
++  </main>
++
++  <!-- Player Bar -->
++  <div class="player-bar" id="player-bar">
++    <div class="player-track-info">
++      <div class="player-cover" id="player-cover"></div>
++      <div class="player-meta">
++        <div class="player-title" id="player-title">Нічого не грає</div>
++        <div class="player-artist" id="player-artist">—</div>
++      </div>
++      <button class="like-btn-player" id="like-btn-player" onclick="toggleLike()">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
++          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
++        </svg>
++      </button>
++    </div>
++
++    <div class="player-controls-center">
++      <div class="player-buttons">
++        <button class="ctrl-btn" id="shuffle-btn" onclick="toggleShuffle()" title="Перемішати">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
++            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
++            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
++          </svg>
++        </button>
++        <button class="ctrl-btn" onclick="prevTrack()" title="Попередній">
++          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/></svg>
++        </button>
++        <button class="play-pause-btn" id="play-pause-btn" onclick="togglePlay()">
++          <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M5 3l14 9-14 9V3z"/></svg>
++          <svg id="pause-icon" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
++        </button>
++        <button class="ctrl-btn" onclick="nextTrack()" title="Наступний">
++          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
++        </button>
++        <button class="ctrl-btn" id="repeat-btn" onclick="toggleRepeat()" title="Повтор">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
++            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
++            <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
++          </svg>
++        </button>
++      </div>
++
++      <div class="progress-area">
++        <span class="time-label" id="current-time">0:00</span>
++        <div class="progress-bar" id="progress-bar" onclick="seekTo(event)">
++          <div class="progress-fill" id="progress-fill"></div>
++          <div class="progress-thumb" id="progress-thumb"></div>
++        </div>
++        <span class="time-label" id="total-time">0:00</span>
++      </div>
++    </div>
++
++    <div class="player-right">
++      <!-- Equalizer Button -->
++      <button class="ctrl-btn" id="eq-btn" onclick="openEqualizer()" title="Еквалайзер">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
++          <line x1="4" y1="21" x2="4" y2="14"></line>
++          <line x1="4" y1="10" x2="4" y2="3"></line>
++          <line x1="12" y1="21" x2="12" y2="12"></line>
++          <line x1="12" y1="8" x2="12" y2="3"></line>
++          <line x1="20" y1="21" x2="20" y2="16"></line>
++          <line x1="20" y1="12" x2="20" y2="3"></line>
++          <line x1="1" y1="14" x2="7" y2="14"></line>
++          <line x1="9" y1="8" x2="15" y2="8"></line>
++          <line x1="17" y1="16" x2="23" y2="16"></line>
++        </svg>
++      </button>
++
++      <div class="visualizer" id="visualizer">
++        <div class="bar" style="--i:1"></div>
++        <div class="bar" style="--i:2"></div>
++        <div class="bar" style="--i:3"></div>
++        <div class="bar" style="--i:4"></div>
++        <div class="bar" style="--i:5"></div>
++        <div class="bar" style="--i:6"></div>
++        <div class="bar" style="--i:7"></div>
++      </div>
++      <button class="ctrl-btn volume-icon-btn" onclick="toggleMute()" id="volume-icon-btn">
++        <svg id="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
++          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
++          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
++          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
++        </svg>
++      </button>
++      <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="80" oninput="setVolume(this.value)" />
++      <button class="queue-btn" onclick="toggleQueue()" title="Черга">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
++          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
++          <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
++          <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
++        </svg>
++      </button>
++    </div>
++  </div>
++
++  <!-- Queue Panel -->
++  <div class="queue-panel" id="queue-panel">
++    <div class="queue-header">
++      <h3>Черга</h3>
++      <button onclick="toggleQueue()">✕</button>
++    </div>
++    <div class="queue-list" id="queue-list"></div>
++  </div>
++
++  <!-- Notification -->
++  <div class="notification" id="notification"></div>
++
++  <!-- Playlist Modal -->
++  <div class="playlist-modal-overlay" id="playlist-modal-overlay" onclick="closePlaylistModal()">
++    <div class="playlist-modal" id="playlist-modal" onclick="event.stopPropagation()">
++      <div class="playlist-modal-header">
++        <h3 id="playlist-modal-title">Новий плейлист</h3>
++        <button class="playlist-modal-close" onclick="closePlaylistModal()">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++        </button>
++      </div>
++      <div class="playlist-modal-body">
++        <div class="playlist-cover-picker" id="playlist-cover-picker">
++          <div class="playlist-cover-preview" id="playlist-cover-preview"></div>
++          <div class="playlist-cover-options" id="playlist-cover-options"></div>
++          
++          <!-- Custom Playlist Cover Upload -->
++          <div class="playlist-cover-upload" style="margin-top: 15px; text-align: center;">
++            <button type="button" class="upload-btn" onclick="document.getElementById('playlist-cover-file').click()" style="width: 100%; justify-content: center;">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 8px;">
++                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
++                <polyline points="17 8 12 3 7 8"></polyline>
++                <line x1="12" y1="3" x2="12" y2="15"></line>
++              </svg>
++              Завантажити свою обкладинку
++            </button>
++            <input type="file" id="playlist-cover-file" accept="image/*" style="display:none" onchange="handlePlaylistCoverUpload(this)" />
++          </div>
++        </div>
++        <div class="playlist-modal-field">
++          <label>Назва плейлиста</label>
++          <input type="text" id="playlist-name-input" placeholder="Мій крутий плейлист" maxlength="50" />
++        </div>
++        <div class="playlist-modal-field">
++          <label>Опис <span style="color:var(--text-muted);font-weight:400">(необов'язково)</span></label>
++          <textarea id="playlist-desc-input" placeholder="Короткий опис..." maxlength="120" rows="2"></textarea>
++        </div>
++      </div>
++      <div class="playlist-modal-footer">
++        <button class="playlist-modal-cancel" onclick="closePlaylistModal()">Скасувати</button>
++        <button class="playlist-modal-save" id="playlist-modal-save" onclick="savePlaylist()">Створити</button>
++      </div>
++    </div>
++  </div>
++
++  <!-- Add to Playlist Modal -->
++  <div class="playlist-modal-overlay" id="add-to-playlist-overlay" onclick="closeAddToPlaylist()">
++    <div class="playlist-modal" id="add-to-playlist-modal" onclick="event.stopPropagation()" style="max-width:360px">
++      <div class="playlist-modal-header">
++        <h3>Додати до плейлиста</h3>
++        <button class="playlist-modal-close" onclick="closeAddToPlaylist()">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++        </button>
++      </div>
++      <div class="add-to-playlist-list" id="add-to-playlist-list"></div>
++      <div class="playlist-modal-footer">
++        <button class="playlist-modal-cancel" style="width:100%" onclick="openCreatePlaylist()">+ Новий плейлист</button>
++      </div>
++    </div>
++  </div>
++
++  <!-- Auth Modal Overlay -->
++  <div class="auth-overlay" id="auth-overlay">
++    <div class="auth-modal" id="auth-modal">
++      <button class="auth-close" id="auth-close" onclick="closeAuth()">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
++          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
++        </svg>
++      </button>
++
++      <!-- Logo -->
++      <div class="auth-logo">
++        <div class="auth-logo-icon">
++          <svg width="36" height="36" viewBox="0 0 28 28" fill="none">
++            <circle cx="14" cy="14" r="14" fill="url(#authLogoGrad)"/>
++            <path d="M8 18V10l12 4-12 4z" fill="white"/>
++            <defs>
++              <linearGradient id="authLogoGrad" x1="0" y1="0" x2="28" y2="28">
++                <stop offset="0%" stop-color="#ff6b35"/>
++                <stop offset="100%" stop-color="#f7931e"/>
++              </linearGradient>
++            </defs>
++          </svg>
++        </div>
++        <span>SoundWave</span>
++      </div>
++
++      <!-- Tabs -->
++      <div class="auth-tabs">
++        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Увійти</button>
++        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Реєстрація</button>
++      </div>
++
++      <!-- LOGIN FORM -->
++      <form class="auth-form active" id="form-login" onsubmit="handleLogin(event)">
++        <div class="auth-greeting" id="login-greeting">
++          <h2>З поверненням! 👋</h2>
++          <p>Увійди у свій акаунт</p>
++        </div>
++        <div class="auth-field">
++          <label for="login-email">Email</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
++              <polyline points="22,6 12,13 2,6"/>
++            </svg>
++            <input type="email" id="login-email" placeholder="твій@email.com" required autocomplete="email" />
++          </div>
++        </div>
++        <div class="auth-field">
++          <label for="login-password">Пароль</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
++              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
++            </svg>
++            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
++            <button type="button" class="toggle-pass" onclick="togglePassVis('login-password', this)">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
++                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
++              </svg>
++            </button>
++          </div>
++        </div>
++        <div class="auth-error" id="login-error"></div>
++        <button type="submit" class="auth-submit" id="login-submit">
++          <span>Увійти</span>
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
++            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
++          </svg>
++        </button>
++        <p class="auth-switch">Немає акаунту? <a href="#" onclick="switchTab('register')">Зареєструватись</a></p>
++      </form>
++
++      <!-- REGISTER FORM -->
++      <form class="auth-form" id="form-register" onsubmit="handleRegister(event)">
++        <div class="auth-greeting">
++          <h2>Створи акаунт 🎵</h2>
++          <p>Приєднуйся до SoundWave</p>
++        </div>
++        <div class="auth-field">
++          <label for="reg-name">Ім'я</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
++            </svg>
++            <input type="text" id="reg-name" placeholder="Твоє ім'я" required minlength="2" autocomplete="name" />
++          </div>
++        </div>
++        <div class="auth-field">
++          <label for="reg-email">Email</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
++              <polyline points="22,6 12,13 2,6"/>
++            </svg>
++            <input type="email" id="reg-email" placeholder="твій@email.com" required autocomplete="email" />
++          </div>
++        </div>
++        <div class="auth-field">
++          <label for="reg-password">Пароль</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
++              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
++            </svg>
++            <input type="password" id="reg-password" placeholder="Мінімум 6 символів" required minlength="6" autocomplete="new-password" />
++            <button type="button" class="toggle-pass" onclick="togglePassVis('reg-password', this)">
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
++                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
++              </svg>
++            </button>
++          </div>
++          <div class="pass-strength" id="pass-strength">
++            <div class="pass-strength-bar" id="pass-strength-bar"></div>
++          </div>
++          <span class="pass-strength-label" id="pass-strength-label"></span>
++        </div>
++        <div class="auth-field">
++          <label for="reg-password2">Підтвердження паролю</label>
++          <div class="auth-input-wrap">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M9 12l2 2 4-4"/><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
++              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
++            </svg>
++            <input type="password" id="reg-password2" placeholder="Повтори пароль" required autocomplete="new-password" />
++          </div>
++        </div>
++        <div class="auth-error" id="reg-error"></div>
++        <button type="submit" class="auth-submit" id="reg-submit">
++          <span>Зареєструватись</span>
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
++            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
++          </svg>
++        </button>
++        <p class="auth-switch">Вже є акаунт? <a href="#" onclick="switchTab('login')">Увійти</a></p>
++      </form>
++
++      <!-- VERIFY EMAIL FORM -->
++      <form class="auth-form" id="form-verify" onsubmit="verifyRegistrationCode(event)">
++        <div style="text-align:center;margin-bottom:20px;">
++          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="48" height="48" style="margin-bottom:12px;">
++            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
++            <polyline points="22,6 12,13 2,6"/>
++          </svg>
++          <h3 style="font-size:18px;margin-bottom:8px;">Підтвердження пошти</h3>
++          <p style="color:var(--text-muted);font-size:13px;line-height:1.4;" id="verify-email-text">
++            Ми відправили 6-значний код на<br><b>email@example.com</b>
++          </p>
++        </div>
++        <div class="auth-field" style="margin-bottom:24px;">
++          <input type="text" id="reg-code" placeholder="------" maxlength="6" style="text-align:center;font-size:24px;letter-spacing:8px;padding:12px;" autocomplete="off" />
++        </div>
++        <div class="auth-error" id="reg-code-error" style="text-align:center;margin-bottom:16px;"></div>
++        <button type="submit" class="auth-submit" id="verify-submit">
++          <span>Підтвердити</span>
++        </button>
++        <p class="auth-switch" style="margin-top:16px;"><a href="#" onclick="switchTab('register')">Змінити email</a></p>
++      </form>
++
++    </div>
++  </div>
++
++  <!-- User Dropdown Menu -->
++  <div class="user-dropdown" id="user-dropdown">
++    <div class="user-dropdown-header" id="dropdown-header"></div>
++    <div class="user-dropdown-divider"></div>
++    <button class="user-dropdown-item" onclick="openProfileEdit()">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
++      </svg>
++      Профіль
++    </button>
++    <button class="user-dropdown-item" onclick="showSection('library', document.getElementById('nav-library')); closeDropdown()">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++        <path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
++      </svg>
++      Моя бібліотека
++    </button>
++    <button class="user-dropdown-item" onclick="showSection('liked', document.getElementById('nav-liked')); closeDropdown()">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
++      </svg>
++      Вподобані
++    </button>
++    <div class="user-dropdown-divider"></div>
++    <button class="user-dropdown-item" onclick="openAccountSwitcher(); closeDropdown()">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
++        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
++      </svg>
++      Змінити акаунт
++    </button>
++    <div class="user-dropdown-divider"></div>
++    <button class="user-dropdown-item logout" onclick="handleLogout()">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
++        <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
++      </svg>
++      Вийти
++    </button>
++  </div>
++
++  <audio id="audio-element"></audio>
++
++  <!-- Account Switcher Modal -->
++  <div class="accsw-overlay" id="accsw-overlay" onclick="closeAccountSwitcher()">
++    <div class="accsw-modal" onclick="event.stopPropagation()">
++      <div class="accsw-header">
++        <h3>Перейти на інший акаунт</h3>
++        <button class="accsw-close" onclick="closeAccountSwitcher()">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++        </button>
++      </div>
++      <div class="accsw-list" id="accsw-list"></div>
++      <div class="accsw-footer">
++        <button class="accsw-new-btn" onclick="closeAccountSwitcher(); openAuth('register')">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
++          Новий акаунт
++        </button>
++      </div>
++    </div>
++  </div>
++
++  <!-- Equalizer Modal -->
++  <div class="accsw-overlay" id="eq-overlay" onclick="closeEqualizer()">
++    <div class="accsw-modal" onclick="event.stopPropagation()" style="width: 750px;">
++      <div class="accsw-header">
++        <h3>Розширений Еквалайзер</h3>
++        <div style="display:flex; align-items:center; gap: 10px;">
++          <select id="eq-preset-select" onchange="applyEqPreset(this.value)" style="padding: 6px; border-radius: 4px; background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border); font-family: inherit; font-size: 13px;">
++            <option value="custom">Свій варіант</option>
++            <option value="normal" selected>Звичайний (Flat)</option>
++            <option value="pop">Pop</option>
++            <option value="rock">Rock</option>
++            <option value="jazz">Jazz</option>
++            <option value="classic">Classical</option>
++            <option value="bass">Bass Boost</option>
++            <option value="treble">Treble Boost</option>
++          </select>
++          <button class="accsw-close" onclick="closeEqualizer()">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++          </button>
++        </div>
++      </div>
++      <div class="profile-edit-body" style="padding: 24px; display: flex; flex-direction: column;">
++        
++        <div style="display: flex; gap: 24px; margin-bottom: 30px;">
++          
++          <!-- PREAMP -->
++          <div class="eq-band" style="padding-right: 24px; border-right: 1px solid var(--border);">
++            <span class="eq-value" id="eq-val-preamp">0dB</span>
++            <input type="range" class="eq-slider" id="eq-slider-preamp" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq('preamp', this.value)" />
++            <span class="eq-label">Preamp</span>
++          </div>
++
++          <!-- BANDS -->
++          <div style="display: flex; gap: 30px; flex: 1; height: 175px; align-items: flex-end; overflow-x: auto; padding-bottom: 10px; padding-top: 10px;">
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-0">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(0, this.value)" />
++              <span class="eq-label">32 Hz</span>
++              <span class="eq-desc">Суб-бас</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-1">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(1, this.value)" />
++              <span class="eq-label">64 Hz</span>
++              <span class="eq-desc">Бас</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-2">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(2, this.value)" />
++              <span class="eq-label">125 Hz</span>
++              <span class="eq-desc">Панч</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-3">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(3, this.value)" />
++              <span class="eq-label">250 Hz</span>
++              <span class="eq-desc">Теплота</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-4">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(4, this.value)" />
++              <span class="eq-label">500 Hz</span>
++              <span class="eq-desc">Вокал</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-5">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(5, this.value)" />
++              <span class="eq-label">1 kHz</span>
++              <span class="eq-desc">Присутність</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-6">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(6, this.value)" />
++              <span class="eq-label">2 kHz</span>
++              <span class="eq-desc">Атака</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-7">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(7, this.value)" />
++              <span class="eq-label">4 kHz</span>
++              <span class="eq-desc">Різкість</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-8">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(8, this.value)" />
++              <span class="eq-label">8 kHz</span>
++              <span class="eq-desc">Яскравість</span>
++            </div>
++            <div class="eq-band">
++              <span class="eq-value" id="eq-val-9">0dB</span>
++              <input type="range" class="eq-slider eq-slider-band" orient="vertical" min="-12" max="12" step="0.1" value="0" oninput="updateEq(9, this.value)" />
++              <span class="eq-label">16 kHz</span>
++              <span class="eq-desc">Повітря</span>
++            </div>
++          </div>
++        </div>
++
++        <button class="upload-btn" onclick="resetEq()" style="margin: 0 auto; background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border);">Скинути все</button>
++
++      </div>
++    </div>
++  </div>
++
++  <!-- Profile Edit Modal -->
++  <div class="accsw-overlay" id="profile-edit-overlay" onclick="closeProfileEdit()">
++    <div class="accsw-modal" onclick="event.stopPropagation()">
++      <div class="accsw-header">
++        <h3>Редагувати профіль</h3>
++        <button class="accsw-close" onclick="closeProfileEdit()">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++        </button>
++      </div>
++      <div class="profile-edit-body" style="padding: 20px;">
++        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
++          <div class="avatar" id="profile-edit-avatar" style="width: 80px; height: 80px; font-size: 28px; margin-bottom: 12px; cursor: pointer; object-fit: cover; overflow: hidden;" onclick="document.getElementById('profile-avatar-file').click()" title="Змінити аватарку"></div>
++          <button class="upload-btn" onclick="document.getElementById('profile-avatar-file').click()" style="background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border);">
++            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
++              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
++              <polyline points="17 8 12 3 7 8"></polyline>
++              <line x1="12" y1="3" x2="12" y2="15"></line>
++            </svg>
++            Завантажити фото
++          </button>
++          <input type="file" id="profile-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)" />
++        </div>
++        
++        <div class="playlist-modal-field">
++          <label>Ім'я</label>
++          <input type="text" id="profile-name-input" placeholder="Твоє ім'я" maxlength="50" style="width: 100%; box-sizing: border-box;" />
++        </div>
++      </div>
++      <div class="accsw-footer" style="justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border);">
++        <button class="playlist-modal-cancel" onclick="closeProfileEdit()" style="margin-right: 12px;">Скасувати</button>
++        <button class="playlist-modal-save" onclick="saveProfileEdit()">Зберегти</button>
++      </div>
++    </div>
++  </div>
++
++  <script src="storage.js"></script>
++  <script src="app.js"></script>
++  <script src="auth.js"></script>
++</body>
++</html>
