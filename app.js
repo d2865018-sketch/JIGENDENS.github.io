@@ -1929,9 +1929,15 @@ function showNotification(msg) {
   if ('Notification' in window) {
     if (Notification.permission === 'granted') {
       if (/💬|👥|❤️|Запит|Новий/i.test(msg)) {
-        try {
-          new Notification('Jigendens', { body: msg });
-        } catch (e) {}
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification('Jigendens', { body: msg, icon: '/favicon.ico' });
+          }).catch(e => {
+            try { new Notification('Jigendens', { body: msg }); } catch(err) {}
+          });
+        } else {
+          try { new Notification('Jigendens', { body: msg }); } catch(err) {}
+        }
       }
     }
   }
@@ -1946,7 +1952,11 @@ window.requestNativeNotifications = function() {
     Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
         showNotification('✅ Push-сповіщення успішно увімкнено!');
-        new Notification('Jigendens', { body: 'Тепер ви отримуватимете сповіщення про повідомлення!' });
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready.then(reg => reg.showNotification('Jigendens', { body: 'Тепер ви отримуватимете сповіщення про повідомлення!' }));
+        } else {
+          try { new Notification('Jigendens', { body: 'Тепер ви отримуватимете сповіщення про повідомлення!' }); } catch(e){}
+        }
       } else {
         showNotification('❌ Ви відхилили дозвіл на сповіщення');
       }
