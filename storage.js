@@ -374,19 +374,45 @@ async function swLoadMedia() {
 
 async function swDeleteMedia(item) {
   const session = await swGetSession();
-  if (!session) return false;
+  const isAdmin = (typeof isUserAdmin === 'function') && isUserAdmin();
+  if (!session && !isAdmin) {
+    swNotify('⚠️ Увійди в акаунт або авторизуйся як адмін');
+    return false;
+  }
+
   try {
     const marker = '/media/';
-    const i = item.file_url.indexOf(marker);
+    const i = (item.file_url || '').indexOf(marker);
     if (i !== -1) {
       const path = decodeURIComponent(item.file_url.slice(i + marker.length).split('?')[0]);
-      await supabaseClient.storage.from('media').remove([path]);
+      try {
+        await supabaseClient.storage.from('media').remove([path]);
+      } catch (stErr) {
+        console.warn('[Media Storage] remove file warning:', stErr);
+      }
     }
-    const { error } = await supabaseClient.from('community_media').delete().eq('id', item.id);
-    if (error) { swNotify('❌ Не вдалося видалити: ' + error.message); return false; }
+
+    const { error, data } = await supabaseClient
+      .from('community_media')
+      .delete()
+      .eq('id', String(item.id))
+      .select();
+
+    if (error) {
+      swNotify('❌ Не вдалося видалити: ' + error.message);
+      return false;
+    }
+
+    // Якщо RLS заблокував видалення чужого запису (0 рядків видалено)
+    if (data && data.length === 0) {
+      console.warn('[Media] 0 rows deleted. Supabase RLS may restrict deleting other users items. See admin_setup.sql');
+    }
+
     return true;
   } catch (e) {
     console.error('[Media] delete failed:', e);
+    swNotify('❌ Немає зв’язку з сервером');
     return false;
   }
 }
+

@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSession();
   setupPasswordStrength();
   setupOverlayClose();
+  updateAdminUI();
   
   // Profile Modal Tabs Logic
   document.querySelectorAll('.profile-sidebar-item').forEach(item => {
@@ -92,9 +93,17 @@ function closeAuth() {
 
 function setupOverlayClose() {
   const overlay = document.getElementById('auth-overlay');
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay && currentUser) closeAuth();
-  });
+  if (overlay) {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay && currentUser) closeAuth();
+    });
+  }
+  const adminOverlay = document.getElementById('admin-modal-overlay');
+  if (adminOverlay) {
+    adminOverlay.addEventListener('click', e => {
+      if (e.target === adminOverlay) closeAdminModal();
+    });
+  }
 }
 
 // ===== TABS =====
@@ -358,6 +367,7 @@ async function loginSuccess(user, showNotif = true) {
   // Update greeting
   const h1 = document.querySelector('#section-home .section-header h1');
   if (h1) h1.textContent = `Привіт, ${user.name}! 👋`;
+  if (typeof gcUpdateSenderStatus === 'function') gcUpdateSenderStatus();
 }
 
 // ===== LOGOUT =====
@@ -404,6 +414,7 @@ function handleLogoutLocal() {
   updateTopbarGuest();
   const h1 = document.querySelector('#section-home .section-header h1');
   if (h1) h1.textContent = 'Привіт! 👋';
+  if (typeof gcUpdateSenderStatus === 'function') gcUpdateSenderStatus();
   if (typeof showNotification === 'function') {
     showNotification('👋 До побачення!');
   }
@@ -1131,4 +1142,156 @@ window.copyMyId = function() {
     console.error("Помилка копіювання:", err);
   });
 };
+
+/* ========================================
+   SoundWave — Admin Rights System
+   Пароль адміна: 1230984576admin
+   ======================================== */
+
+const ADMIN_PASSWORD_HASH = '1230984576admin';
+
+function isUserAdmin() {
+  return localStorage.getItem('soundwave_is_admin') === 'true';
+}
+
+function updateAdminUI() {
+  const isAdmin = isUserAdmin();
+
+  // Topbar badge
+  const topbarBadge = document.getElementById('admin-topbar-badge');
+  if (topbarBadge) {
+    topbarBadge.style.display = isAdmin ? 'inline-flex' : 'none';
+  }
+
+  // Dropdown button text & state
+  const dropdownText = document.getElementById('dropdown-admin-text');
+  const dropdownBtn = document.getElementById('dropdown-admin-btn');
+  if (dropdownText) {
+    dropdownText.textContent = isAdmin ? '🛡️ Адміністратор (Активно)' : '🛡️ Отримати права адміна';
+  }
+  if (dropdownBtn) {
+    dropdownBtn.classList.toggle('admin-active', isAdmin);
+  }
+
+  // Feed section admin button & banner
+  const feedBtn = document.getElementById('feed-admin-btn');
+  const feedLabel = document.getElementById('feed-admin-label');
+  if (feedBtn) {
+    feedBtn.classList.toggle('is-active', isAdmin);
+  }
+  if (feedLabel) {
+    feedLabel.textContent = isAdmin ? '🛡️ Адмін активний' : 'Панель адміна';
+  }
+
+  const feedBanner = document.getElementById('feed-admin-banner');
+  if (feedBanner) {
+    feedBanner.style.display = isAdmin ? 'flex' : 'none';
+  }
+
+  // Admin modal content views
+  const loginView = document.getElementById('admin-login-view');
+  const activeView = document.getElementById('admin-active-view');
+  if (loginView && activeView) {
+    if (isAdmin) {
+      loginView.style.display = 'none';
+      activeView.style.display = 'block';
+    } else {
+      loginView.style.display = 'block';
+      activeView.style.display = 'none';
+    }
+  }
+
+  if (typeof gcUpdateAdminState === 'function') {
+    gcUpdateAdminState();
+  }
+}
+
+function openAdminModal() {
+  const overlay = document.getElementById('admin-modal-overlay');
+  if (!overlay) return;
+
+  const errEl = document.getElementById('admin-error-msg');
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+
+  const passInput = document.getElementById('admin-password-input');
+  if (passInput) passInput.value = '';
+
+  updateAdminUI();
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  if (!isUserAdmin() && passInput) {
+    setTimeout(() => passInput.focus(), 150);
+  }
+}
+
+function closeAdminModal() {
+  const overlay = document.getElementById('admin-modal-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function toggleAdminPasswordVis() {
+  const inp = document.getElementById('admin-password-input');
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function handleAdminSubmit(e) {
+  if (e) e.preventDefault();
+  const inp = document.getElementById('admin-password-input');
+  const errEl = document.getElementById('admin-error-msg');
+  if (!inp) return;
+
+  const entered = inp.value.trim();
+  if (!entered) {
+    if (errEl) {
+      errEl.textContent = '⚠️ Введіть пароль адміністратора';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+
+  if (entered === ADMIN_PASSWORD_HASH) {
+    localStorage.setItem('soundwave_is_admin', 'true');
+    updateAdminUI();
+    if (errEl) errEl.style.display = 'none';
+    if (typeof showNotification === 'function') {
+      showNotification('🛡️ Права адміністратора успішно активовано!');
+    }
+    closeAdminModal();
+    if (typeof renderCommunityMedia === 'function') {
+      renderCommunityMedia();
+    }
+    if (typeof gcLoadMessages === 'function') {
+      gcLoadMessages(true);
+    }
+  } else {
+    if (errEl) {
+      errEl.textContent = '❌ Невірний пароль адміністратора!';
+      errEl.style.display = 'block';
+    }
+    inp.classList.add('error');
+    setTimeout(() => inp.classList.remove('error'), 800);
+  }
+}
+
+function revokeAdminRights() {
+  localStorage.removeItem('soundwave_is_admin');
+  updateAdminUI();
+  if (typeof showNotification === 'function') {
+    showNotification('🛡️ Права адміністратора вимкнено');
+  }
+  closeAdminModal();
+  if (typeof renderCommunityMedia === 'function') {
+    renderCommunityMedia();
+  }
+  if (typeof gcLoadMessages === 'function') {
+    gcLoadMessages(true);
+  }
+}
 

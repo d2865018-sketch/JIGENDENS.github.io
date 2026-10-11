@@ -85,6 +85,13 @@
         Стрічка
       </a>
 
+      <a href="#" class="nav-item" id="nav-general-chat" onclick="showSection('general-chat', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        Загальний чат
+      </a>
+
       <a href="#" class="nav-item" id="nav-friends" onclick="showSection('friends', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -151,6 +158,7 @@
           Завантажити
         </button>
         <input type="file" id="file-upload" accept="audio/*" multiple style="display:none" onchange="handleFileUpload(this)" />
+        <div class="admin-topbar-badge" id="admin-topbar-badge" style="display:none;" onclick="openAdminModal()" title="Режим адміністратора активний">🛡️ ADMIN</div>
         <div class="avatar" id="user-avatar">ЮЗ</div>
       </div>
     </header>
@@ -491,6 +499,20 @@
             <h1>Стрічка 🖼️</h1>
             <p class="section-subtitle">Ділися фотографіями та відео з друзями</p>
           </div>
+          <div class="feed-header-actions">
+            <button class="feed-admin-badge-btn" id="feed-admin-btn" onclick="openAdminModal()" title="Панель адміністратора">
+              <span class="feed-admin-icon">🛡️</span>
+              <span id="feed-admin-label">Панель адміна</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="feed-admin-banner" id="feed-admin-banner" style="display:none;">
+          <div class="feed-admin-banner-content">
+            <span class="feed-admin-banner-icon">🛡️</span>
+            <span><strong>Режим адміністратора активний:</strong> ви можете видаляти будь-які публікації інших людей у стрічці.</span>
+          </div>
+          <button class="feed-admin-banner-btn" onclick="openAdminModal()">Керування</button>
         </div>
 
         <div class="comm-create-bar" id="comm-create-bar">
@@ -514,6 +536,73 @@
 
         <div id="community-media-panel">
           <div id="community-media-list"></div>
+        </div>
+      </section>
+
+      <!-- GENERAL CHAT SECTION -->
+      <section class="section" id="section-general-chat">
+        <div class="gc-header">
+          <div class="gc-header-info">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <h1 style="margin:0;">Загальний чат 💬</h1>
+              <span class="gc-status-live" title="Оновлюється автоматично">
+                <span class="gc-live-dot"></span> В ефірі
+              </span>
+              <span class="gc-admin-pill" id="gc-admin-pill" style="display:none;" onclick="openAdminModal()">
+                🛡️ Адмін-режим
+              </span>
+            </div>
+            <p class="section-subtitle">Спілкуйся з усіма користувачами SoundWave відкрито або анонімно</p>
+          </div>
+          <div class="gc-header-actions">
+            <button class="gc-action-btn" onclick="gcReloadMessages()" title="Оновити повідомлення">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              <span>Оновити</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="gc-setup-notice" class="gc-setup-notice" style="display:none;">
+          <span>⚠️ <strong>Примітка для бази даних:</strong> таблицю <code>general_chat</code> ще не створено в Supabase. Виконайте SQL-скрипт з файлу <code>general_chat.sql</code> у Supabase SQL Editor. Поки що повідомлення зберігаються локально.</span>
+        </div>
+
+        <div class="gc-container">
+          <div class="gc-thread" id="gc-thread">
+            <div class="empty-state" style="padding:40px; color:var(--text-muted);">
+              <div class="spinner"></div> Завантаження чату...
+            </div>
+          </div>
+
+          <div class="gc-composer">
+            <div class="gc-composer-tools">
+              <label class="gc-anon-toggle" title="Надіслати як анонімний пост">
+                <input type="checkbox" id="gc-anon-toggle" onchange="gcOnAnonToggleChange(this.checked)" />
+                <span class="gc-anon-badge">
+                  <span class="gc-ghost-icon">👻</span> Анонімно
+                </span>
+              </label>
+              
+              <div id="gc-guest-name-box" class="gc-guest-name-box" style="display:none;">
+                <span>Ім'я:</span>
+                <input type="text" id="gc-guest-name-input" placeholder="Ваше ім'я..." maxlength="30" />
+              </div>
+
+              <span class="gc-sender-hint" id="gc-sender-hint">Від свого імені</span>
+            </div>
+
+            <div class="gc-input-row">
+              <textarea id="gc-input" rows="1" maxlength="2000" placeholder="Напиши повідомлення у загальний чат... (Enter для відправки)" onkeydown="gcInputKey(event)" oninput="gcAutoGrow(this)"></textarea>
+              <button class="gc-send-btn" id="gc-send-btn" onclick="gcSendMessage()" title="Надіслати">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -990,6 +1079,68 @@
     </div>
   </div>
 
+  <!-- Admin Modal Overlay -->
+  <div class="auth-overlay" id="admin-modal-overlay">
+    <div class="auth-modal admin-modal-box">
+      <button class="auth-close" onclick="closeAdminModal()" aria-label="Закрити">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="admin-modal-header">
+        <div class="admin-modal-icon">🛡️</div>
+        <div>
+          <h2 style="font-size:22px; font-weight:700; margin:0 0 4px 0; font-family:'Space Grotesk',sans-serif; color:var(--text-primary);">Панель адміністратора</h2>
+          <p style="font-size:13px; color:var(--text-secondary); margin:0;">Керування модерацією та видаленням постів</p>
+        </div>
+      </div>
+
+      <!-- State: Not Admin -->
+      <div id="admin-login-view">
+        <p style="font-size:14px; color:var(--text-secondary); line-height:1.5; margin:16px 0 20px;">
+          Введіть секретний пароль адміністратора, щоб отримати права на видалення будь-яких публікацій інших користувачів у Стрічці.
+        </p>
+
+        <form onsubmit="handleAdminSubmit(event)" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="auth-field" style="position:relative;">
+            <input type="password" id="admin-password-input" placeholder="Введіть адмін-пароль" autocomplete="current-password" required
+                   style="width:100%; box-sizing:border-box; padding-right:44px;" />
+            <button type="button" onclick="toggleAdminPasswordVis()" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; padding:4px;" title="Показати/приховати пароль">
+              👁️
+            </button>
+          </div>
+          <div id="admin-error-msg" class="auth-error" style="display:none; text-align:left;"></div>
+          <button type="submit" class="auth-submit" id="admin-submit-btn">
+            <span>🛡️ Отримати права адміна</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- State: Active Admin -->
+      <div id="admin-active-view" style="display:none;">
+        <div class="admin-status-card">
+          <div class="admin-status-pill">
+            <span class="admin-status-dot"></span>
+            <span>Права адміністратора активні</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin:12px 0 0; line-height:1.5;">
+            Ви увійшли як адміністратор. Тепер у розділі <strong>«Стрічка»</strong> для кожної публікації доступна кнопка <strong>«🛡️ Видалити (Адмін)»</strong>.
+          </p>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+          <button type="button" class="admin-revoke-btn" onclick="revokeAdminRights()">
+            <span>🚪 Вийти з режиму адміна</span>
+          </button>
+          <button type="button" class="admin-close-action-btn" onclick="closeAdminModal()">
+            <span>Закрити</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- User Dropdown Menu -->
   <div class="user-dropdown" id="user-dropdown">
     <div class="user-dropdown-header" id="dropdown-header"></div>
@@ -999,6 +1150,12 @@
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
       </svg>
       Профіль
+    </button>
+    <button class="user-dropdown-item" id="dropdown-admin-btn" onclick="openAdminModal(); closeDropdown()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span id="dropdown-admin-text">Права адміна</span>
     </button>
     <button class="user-dropdown-item" onclick="startShakeForFriend(); closeDropdown()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -1275,6 +1432,7 @@
   <script src="auth.js?v=10"></script>
   <script src="messages.js?v=10"></script>
   <script src="profiles.js?v=10"></script>
+  <script src="chat.js?v=10"></script>
 
   <script>
     // ===== PWA: service worker + кнопка "Встановити" =====

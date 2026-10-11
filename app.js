@@ -1037,6 +1037,9 @@ function showSection(name, el) {
   if (el) el.classList.add('active');
   currentSection = name;
 
+  const ca = document.querySelector('.content-area');
+  if (ca) ca.scrollTop = 0;
+
   // Close mobile sidebar
   const sidebar = document.getElementById('sidebar');
   if (sidebar) sidebar.classList.remove('open');
@@ -1056,6 +1059,7 @@ function showSection(name, el) {
   if (name === 'top-users') renderTopUsers();
   if (name === 'friends' && typeof pfOnSectionOpen === 'function') pfOnSectionOpen();
   if (name === 'messages' && typeof msgOnSectionOpen === 'function') msgOnSectionOpen();
+  if (name === 'general-chat' && typeof gcOnSectionOpen === 'function') gcOnSectionOpen();
 }
 
 function switchLibTab(tab) {
@@ -2638,6 +2642,13 @@ async function renderCommunityMedia() {
   communityMedia = (typeof swLoadMedia === 'function') ? await swLoadMedia() : [];
   const session = (typeof swGetSession === 'function') ? await swGetSession() : null;
   const myId = session ? session.user.id : null;
+  const isAdmin = (typeof isUserAdmin === 'function') && isUserAdmin();
+
+  // Оновлюємо банер адміна у стрічці, якщо присутній
+  const adminBanner = document.getElementById('feed-admin-banner');
+  if (adminBanner) {
+    adminBanner.style.display = isAdmin ? 'flex' : 'none';
+  }
 
   if (communityMedia.length === 0) {
     el.innerHTML = `
@@ -2655,12 +2666,13 @@ async function renderCommunityMedia() {
       : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" data-nofb="1" loading="lazy" alt="" /></a>`;
     const date = new Date(m.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
     const mine = myId && m.user_id === myId;
+    const canDelete = mine || isAdmin;
     const isAnon = m.owner_name === 'Анонім';
     const ownerLinkHtml = (!isAnon && typeof msgOwnerLink === 'function')
       ? msgOwnerLink(m.user_id, m.owner_name)
       : `👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}`;
     return `
-      <div class="comm-media-card">
+      <div class="comm-media-card ${!mine && isAdmin ? 'comm-media-card--admin-view' : ''}">
         <div class="comm-media-box">${box}</div>
         <div class="comm-media-info">
           ${m.caption ? `<div class="comm-media-caption">${escapeHtml(String(m.caption))}</div>` : ''}
@@ -2668,7 +2680,12 @@ async function renderCommunityMedia() {
             <span class="comm-media-owner">${ownerLinkHtml}</span>
             <span style="opacity:0.7">${m.kind === 'video' ? '🎬' : '🖼️'} ${date}</span>
           </div>
-          ${mine ? `<button class="comm-media-del" onclick="deleteCommunityMedia('${m.id}')">🗑️ Видалити</button>` : ''}
+          ${canDelete ? `
+            <button class="comm-media-del ${!mine && isAdmin ? 'comm-media-del-admin' : ''}" 
+                    onclick="deleteCommunityMedia('${m.id}')"
+                    title="${!mine && isAdmin ? 'Видалити публікацію як адміністратор' : 'Видалити'}">
+              ${!mine && isAdmin ? '🛡️ Видалити (Адмін)' : '🗑️ Видалити'}
+            </button>` : ''}
           ${(!mine && !isAnon && typeof msgWriteButton === 'function') ? `<div style="margin-top:10px">${msgWriteButton(m.user_id, m.owner_name)}</div>` : ''}
         </div>
       </div>`;
@@ -2678,10 +2695,29 @@ async function renderCommunityMedia() {
 async function deleteCommunityMedia(id) {
   const item = communityMedia.find(m => String(m.id) === String(id));
   if (!item) return;
-  if (!confirm('Видалити цю публікацію?')) return;
+
+  const session = (typeof swGetSession === 'function') ? await swGetSession() : null;
+  const myId = session ? session.user.id : null;
+  const isMine = myId && item.user_id === myId;
+  const isAdmin = (typeof isUserAdmin === 'function') && isUserAdmin();
+
+  if (!isMine && !isAdmin) {
+    if (typeof showNotification === 'function') showNotification('❌ У вас немає прав для видалення цього поста');
+    return;
+  }
+
+  const authorName = item.owner_name || 'Користувач';
+  const promptText = (!isMine && isAdmin)
+    ? `Ви дійсно хочете видалити цей пост автора "${authorName}" як адміністратор?`
+    : 'Видалити цю публікацію?';
+
+  if (!confirm(promptText)) return;
+
   const ok = await swDeleteMedia(item);
   if (ok) {
-    showNotification('🗑️ Публікацію видалено');
+    if (typeof showNotification === 'function') {
+      showNotification(!isMine && isAdmin ? '🛡️ Пост успішно видалено адміністратором' : '🗑️ Публікацію видалено');
+    }
     renderCommunityMedia();
   }
 }
