@@ -649,7 +649,7 @@ function trackRowHTML(track, displayNum, ctx) {
       <div class="track-row-info">
         <div class="track-row-title">${track.title}</div>
         <div class="track-row-artist">${ctx === 'community'
-          ? `${escapeHtml(String(track.artist || ''))} · ${typeof msgOwnerLink === 'function' ? msgOwnerLink(track.owner_id, track.owner) : '👤 ' + escapeHtml(String(track.owner || 'Користувач'))}`
+          ? `${escapeHtml(String(track.artist || ''))} · ${(track.is_anonymous || track.owner === 'Анонім') ? '👤 Анонім' : (typeof msgOwnerLink === 'function' ? msgOwnerLink(track.owner_id, track.owner) : '👤 ' + escapeHtml(String(track.owner || 'Користувач')))}`
           : `${track.artist} · ${track.plays || '—'} прослуховувань`}</div>
       </div>
       <button class="track-row-like ${liked ? 'liked' : ''}" 
@@ -1158,7 +1158,7 @@ async function renderTopUsers() {
 
   const userStats = {};
   publicTracks.forEach(track => {
-    if (track.owner_id) {
+    if (track.owner_id && !track.is_anonymous && track.owner !== 'Анонім') {
       if (!userStats[track.owner_id]) {
         userStats[track.owner_id] = { id: track.owner_id, name: track.owner || 'Користувач', count: 0 };
       }
@@ -2528,7 +2528,7 @@ function openCommunityPlaylist(id) {
     `Опублікував: ${p.owner_name || 'Користувач'} · ${list.length} ${trackWord(list.length)}`;
   document.getElementById('cp-desc').textContent = p.description || '';
   const writeSlot = document.getElementById('cp-write-slot');
-  if (writeSlot) writeSlot.innerHTML = (typeof msgWriteButton === 'function') ? msgWriteButton(p.user_id, p.owner_name) : '';
+  if (writeSlot) writeSlot.innerHTML = (p.owner_name !== 'Анонім' && typeof msgWriteButton === 'function') ? msgWriteButton(p.user_id, p.owner_name) : '';
   document.getElementById('cp-tracks-list').innerHTML =
     resolved.map((t, i) => trackRowHTML(t, i, 'community')).join('');
 
@@ -2655,7 +2655,10 @@ async function renderCommunityMedia() {
       : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" data-nofb="1" loading="lazy" alt="" /></a>`;
     const date = new Date(m.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
     const mine = myId && m.user_id === myId;
-    const ownerLinkHtml = typeof msgOwnerLink === 'function' ? msgOwnerLink(m.user_id, m.owner_name) : `👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}`;
+    const isAnon = m.owner_name === 'Анонім';
+    const ownerLinkHtml = (!isAnon && typeof msgOwnerLink === 'function')
+      ? msgOwnerLink(m.user_id, m.owner_name)
+      : `👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}`;
     return `
       <div class="comm-media-card">
         <div class="comm-media-box">${box}</div>
@@ -2666,7 +2669,7 @@ async function renderCommunityMedia() {
             <span style="opacity:0.7">${m.kind === 'video' ? '🎬' : '🖼️'} ${date}</span>
           </div>
           ${mine ? `<button class="comm-media-del" onclick="deleteCommunityMedia('${m.id}')">🗑️ Видалити</button>` : ''}
-          ${(!mine && typeof msgWriteButton === 'function') ? `<div style="margin-top:10px">${msgWriteButton(m.user_id, m.owner_name)}</div>` : ''}
+          ${(!mine && !isAnon && typeof msgWriteButton === 'function') ? `<div style="margin-top:10px">${msgWriteButton(m.user_id, m.owner_name)}</div>` : ''}
         </div>
       </div>`;
   }).join('') + '</div>';

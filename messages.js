@@ -82,19 +82,21 @@ function msgPreview(m) {
 
 // Ім'я автора як посилання (для рядків треків)
 function msgOwnerLink(uid, name) {
+  const isAnon = !uid || name === 'Анонім';
   const label = `👤 ${msgEsc(name || 'Користувач')}`;
-  if (!uid) return label;
+  if (isAnon) return label;
   return `<span class="owner-link" title="Відкрити профіль" data-uid="${msgEsc(uid)}" data-name="${msgEsc(name || '')}" onclick="event.stopPropagation(); msgOpenProfileFromBtn(this)">${label}</span>`;
 }
 
 function msgOpenProfileFromBtn(btn) {
+  if (btn.dataset.name === 'Анонім') return;
   if (typeof openUserProfile === 'function') openUserProfile(btn.dataset.uid, btn.dataset.name);
   else msgOpenChat(btn.dataset.uid, btn.dataset.name);
 }
 
-// Кнопка "✉️ Написати" (не показується для власних публікацій)
+// Кнопка "✉️ Написати" (не показується для власних або анонімних публікацій)
 function msgWriteButton(uid, name, cls = 'msg-write-btn') {
-  if (!uid || (MSG.me && MSG.me.id === uid)) return '';
+  if (!uid || (MSG.me && MSG.me.id === uid) || name === 'Анонім') return '';
   return `<button class="${cls}" data-uid="${msgEsc(uid)}" data-name="${msgEsc(name || '')}" onclick="event.stopPropagation(); msgOpenChatFromBtn(this)">✉️ Написати</button>`;
 }
 
@@ -280,6 +282,7 @@ async function msgLoadThread(silent = false) {
 /* ---------- Відкриття / закриття чату ---------- */
 
 async function msgOpenChat(userId, nameHint) {
+  if (nameHint === 'Анонім') return;
   if (!MSG.me) {
     if (typeof showNotification === 'function') showNotification('⚠️ Увійди в акаунт, щоб писати повідомлення');
     if (typeof openAuth === 'function') openAuth('login');

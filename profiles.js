@@ -91,6 +91,7 @@ async function pfFetchUserTracks(uid) {
       .select('*')
       .eq('user_id', uid)
       .eq('is_public', true)
+      .neq('owner_name', 'Анонім')
       .order('created_at', { ascending: false })
       .limit(30);
     if (error) return [];
@@ -276,7 +277,7 @@ function pfCloseProfile() {
 }
 
 async function openUserProfile(uid, nameHint) {
-  if (!uid) return;
+  if (!uid || nameHint === 'Анонім') return;
   if (typeof supabaseClient === 'undefined') return pfNotify('Немає зв’язку з сервером');
   pfCloseProfile();
 
