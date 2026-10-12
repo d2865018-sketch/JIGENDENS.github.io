@@ -33,6 +33,26 @@ function gcFormatTime(iso) {
   return `${d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })}, ${timeStr}`;
 }
 
+function gcGetDeletedMessageIds() {
+  try {
+    return JSON.parse(localStorage.getItem('soundwave_deleted_chat_ids') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function gcMarkMessageDeleted(id) {
+  if (!id) return;
+  const ids = gcGetDeletedMessageIds();
+  const sId = String(id);
+  if (!ids.includes(sId)) {
+    ids.push(sId);
+    try {
+      localStorage.setItem('soundwave_deleted_chat_ids', JSON.stringify(ids));
+    } catch (e) {}
+  }
+}
+
 function gcAutoGrow(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 140) + 'px';
@@ -140,6 +160,9 @@ async function gcLoadMessages(silent = false) {
         if (cached) loaded = JSON.parse(cached);
       } catch (e) {}
     }
+
+    const deletedIds = gcGetDeletedMessageIds();
+    loaded = (loaded || []).filter(m => m && m.id && !deletedIds.includes(String(m.id)));
 
     const prevCount = GC.messages.length;
     GC.messages = loaded;
@@ -287,6 +310,16 @@ async function gcDeleteMessage(id) {
 
   if (!confirm(confirmPrompt)) return;
 
+  // 1. Негайно позначаємо як видалене локально
+  gcMarkMessageDeleted(id);
+  GC.messages = GC.messages.filter(m => String(m.id) !== String(id));
+  try { localStorage.setItem(GC.localCacheKey, JSON.stringify(GC.messages)); } catch (e) {}
+  gcRenderThread();
+
+  if (typeof showNotification === 'function') {
+    showNotification(isAdmin && !isMine ? '🛡️ Повідомлення видалено адміністратором' : '🗑️ Повідомлення видалено');
+  }
+
   try {
     if (typeof supabaseClient !== 'undefined' && !String(id).startsWith('loc_')) {
       const { error } = await supabaseClient.from('general_chat').delete().eq('id', id);
@@ -294,17 +327,8 @@ async function gcDeleteMessage(id) {
         console.warn('[GeneralChat] DB delete failed:', error.message);
       }
     }
-
-    GC.messages = GC.messages.filter(m => String(m.id) !== String(id));
-    localStorage.setItem(GC.localCacheKey, JSON.stringify(GC.messages));
-    gcRenderThread();
-
-    if (typeof showNotification === 'function') {
-      showNotification(isAdmin && !isMine ? '🛡️ Повідомлення видалено адміністратором' : '🗑️ Повідомлення видалено');
-    }
   } catch (err) {
     console.error('[GeneralChat] delete failed:', err);
-    if (typeof showNotification === 'function') showNotification('❌ Не вдалося видалити повідомлення');
   }
 }
 

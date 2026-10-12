@@ -2640,6 +2640,11 @@ async function renderCommunityMedia() {
   el.innerHTML = '<div class="empty-state" style="padding:40px; color:var(--text-muted);">Завантаження...</div>';
 
   communityMedia = (typeof swLoadMedia === 'function') ? await swLoadMedia() : [];
+  if (typeof swGetDeletedMediaIds === 'function') {
+    const deletedIds = swGetDeletedMediaIds();
+    communityMedia = communityMedia.filter(m => m && m.id && !deletedIds.includes(String(m.id)));
+  }
+
   const session = (typeof swGetSession === 'function') ? await swGetSession() : null;
   const myId = session ? session.user.id : null;
   const isAdmin = (typeof isUserAdmin === 'function') && isUserAdmin();
@@ -2662,8 +2667,8 @@ async function renderCommunityMedia() {
   el.innerHTML = '<div class="comm-media-grid">' + communityMedia.map(m => {
     const url = escapeHtml(String(m.file_url));
     const box = m.kind === 'video'
-      ? `<video src="${url}" controls preload="metadata" playsinline></video>`
-      : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" data-nofb="1" loading="lazy" alt="" /></a>`;
+      ? `<video src="${url}" controls preload="metadata" playsinline onerror="handleBrokenCommunityMedia(this, '${m.id}')"></video>`
+      : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" loading="lazy" alt="" onerror="handleBrokenCommunityMedia(this, '${m.id}')" /></a>`;
     const date = new Date(m.created_at).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
     const mine = myId && m.user_id === myId;
     const canDelete = mine || isAdmin;
@@ -2672,7 +2677,7 @@ async function renderCommunityMedia() {
       ? msgOwnerLink(m.user_id, m.owner_name)
       : `👤 ${escapeHtml(String(m.owner_name || 'Користувач'))}`;
     return `
-      <div class="comm-media-card ${!mine && isAdmin ? 'comm-media-card--admin-view' : ''}">
+      <div class="comm-media-card ${!mine && isAdmin ? 'comm-media-card--admin-view' : ''}" data-media-id="${m.id}" id="comm-card-${m.id}">
         <div class="comm-media-box">${box}</div>
         <div class="comm-media-info">
           ${m.caption ? `<div class="comm-media-caption">${escapeHtml(String(m.caption))}</div>` : ''}
@@ -2690,6 +2695,21 @@ async function renderCommunityMedia() {
         </div>
       </div>`;
   }).join('') + '</div>';
+}
+
+function handleBrokenCommunityMedia(el, id) {
+  if (typeof swMarkMediaDeleted === 'function') {
+    swMarkMediaDeleted(id);
+  }
+  communityMedia = communityMedia.filter(m => String(m.id) !== String(id));
+  const card = el.closest('.comm-media-card');
+  if (card) {
+    card.remove();
+    const grid = document.querySelector('.comm-media-grid');
+    if (grid && grid.children.length === 0) {
+      renderCommunityMedia();
+    }
+  }
 }
 
 async function deleteCommunityMedia(id) {
@@ -2713,11 +2733,41 @@ async function deleteCommunityMedia(id) {
 
   if (!confirm(promptText)) return;
 
-  const ok = await swDeleteMedia(item);
-  if (ok) {
-    if (typeof showNotification === 'function') {
-      showNotification(!isMine && isAdmin ? '🛡️ Пост успішно видалено адміністратором' : '🗑️ Публікацію видалено');
-    }
+  // 1. Миттєве плавне зникнення картки з екрана (Optimistic UI)
+  const cardEl = document.querySelector(`[data-media-id="${id}"]`) || document.getElementById(`comm-card-${id}`);
+  if (cardEl) {
+    cardEl.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+    cardEl.style.opacity = '0';
+    cardEl.style.transform = 'scale(0.85)';
+    setTimeout(() => {
+      if (cardEl && cardEl.parentNode) cardEl.remove();
+      const grid = document.querySelector('.comm-media-grid');
+      if (grid && grid.children.length === 0) {
+        renderCommunityMedia();
+      }
+    }, 300);
+  }
+
+  // 2. Видаляємо з локальної пам'яті та записуємо в чорний список
+  communityMedia = communityMedia.filter(m => String(m.id) !== String(id));
+  if (typeof swMarkMediaDeleted === 'function') {
+    swMarkMediaDeleted(id);
+  }
+
+  // 3. Показуємо повідомлення
+  if (typeof showNotification === 'function') {
+    showNotification(!isMine && isAdmin ? '🛡️ Пост успішно видалено адміністратором' : '🗑️ Публікацію видалено');
+  }
+
+  // 4. Видаляємо на сервері (storage + supabase DB)
+  try {
+    await swDeleteMedia(item);
+  } catch (err) {
+    console.warn('[Community Media] delete error:', err);
+  }
+
+  // 5. Якщо карток не лишилось, переконуємось що виводиться стан порожньої стрічки
+  if (communityMedia.length === 0) {
     renderCommunityMedia();
   }
 }

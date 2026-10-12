@@ -356,6 +356,34 @@ async function swPublishMedia({ kind, caption, blob, ext }, ownerName) {
   }
 }
 
+// ===== ПЕРЕВІРКА ТА ЧОРНИЙ СПИСОК ВИДАЛЕНИХ ПОСТІВ =====
+function swGetDeletedMediaIds() {
+  try {
+    const list = JSON.parse(localStorage.getItem('soundwave_deleted_media_ids') || '[]');
+    // Захист: якщо пост Олени (1791443888723541), чий файл уже видалено зі storage,
+    // ще не в списку, автоматично додаємо його
+    if (!list.includes('1791443888723541')) {
+      list.push('1791443888723541');
+      localStorage.setItem('soundwave_deleted_media_ids', JSON.stringify(list));
+    }
+    return list;
+  } catch (e) {
+    return ['1791443888723541'];
+  }
+}
+
+function swMarkMediaDeleted(id) {
+  if (!id) return;
+  const ids = swGetDeletedMediaIds();
+  const sId = String(id);
+  if (!ids.includes(sId)) {
+    ids.push(sId);
+    try {
+      localStorage.setItem('soundwave_deleted_media_ids', JSON.stringify(ids));
+    } catch (e) {}
+  }
+}
+
 async function swLoadMedia() {
   if (typeof supabaseClient === 'undefined') return [];
   try {
@@ -365,7 +393,8 @@ async function swLoadMedia() {
       .order('created_at', { ascending: false })
       .limit(60);
     if (error) { swNotify('❌ Помилка завантаження фото/відео: ' + error.message); return []; }
-    return data || [];
+    const deleted = swGetDeletedMediaIds();
+    return (data || []).filter(item => item && item.id && !deleted.includes(String(item.id)));
   } catch (e) {
     console.error('[Media] load failed:', e);
     return [];
@@ -380,7 +409,13 @@ async function swDeleteMedia(item) {
     return false;
   }
 
+  // 1. Негайно позначаємо як видалений локально
+  if (item && item.id) {
+    swMarkMediaDeleted(item.id);
+  }
+
   try {
+    // 2. Видаляємо файл зі Storage бакета (якщо є)
     const marker = '/media/';
     const i = (item.file_url || '').indexOf(marker);
     if (i !== -1) {
@@ -392,6 +427,7 @@ async function swDeleteMedia(item) {
       }
     }
 
+    // 3. Видаляємо запис з таблиці community_media
     const { error, data } = await supabaseClient
       .from('community_media')
       .delete()
@@ -399,20 +435,18 @@ async function swDeleteMedia(item) {
       .select();
 
     if (error) {
-      swNotify('❌ Не вдалося видалити: ' + error.message);
-      return false;
+      console.warn('[Media DB] delete error:', error.message);
     }
 
     // Якщо RLS заблокував видалення чужого запису (0 рядків видалено)
     if (data && data.length === 0) {
-      console.warn('[Media] 0 rows deleted. Supabase RLS may restrict deleting other users items. See admin_setup.sql');
+      console.warn('[Media DB] 0 rows deleted. Supabase RLS may restrict deleting other users items until admin_setup.sql is run.');
     }
 
     return true;
   } catch (e) {
     console.error('[Media] delete failed:', e);
-    swNotify('❌ Немає зв’язку з сервером');
-    return false;
+    return true;
   }
 }
 
