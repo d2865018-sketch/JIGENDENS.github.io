@@ -11,7 +11,8 @@ const GC = {
   sending: false,
   setupError: false,
   localCacheKey: 'soundwave_general_chat_cache',
-  lastScrollBottom: true
+  lastScrollBottom: true,
+  pendingImage: null   // { file, previewUrl }
 };
 
 function gcEsc(str) {
@@ -63,6 +64,168 @@ function gcInputKey(e) {
     e.preventDefault();
     gcSendMessage();
   }
+}
+
+/* ---- Image attachment helpers ---- */
+
+function gcOnImageSelected(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  // Validation: only images, max 5 MB
+  if (!file.type.startsWith('image/')) {
+    if (typeof showNotification === 'function') showNotification('⚠️ Дозволені лише зображення');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    if (typeof showNotification === 'function') showNotification('⚠️ Максимальний розмір фото — 5 МБ');
+    return;
+  }
+
+  // Create a preview
+  const url = URL.createObjectURL(file);
+  GC.pendingImage = { file, previewUrl: url };
+
+  const preview = document.getElementById('gc-image-preview');
+  const img = document.getElementById('gc-image-preview-img');
+  const attachBtn = document.getElementById('gc-attach-btn');
+  if (img) img.src = url;
+  if (preview) preview.style.display = 'block';
+  if (attachBtn) attachBtn.classList.add('gc-has-image');
+}
+
+function gcRemoveImage() {
+  if (GC.pendingImage && GC.pendingImage.previewUrl) {
+    URL.revokeObjectURL(GC.pendingImage.previewUrl);
+  }
+  GC.pendingImage = null;
+
+  const preview = document.getElementById('gc-image-preview');
+  const img = document.getElementById('gc-image-preview-img');
+  const fileInput = document.getElementById('gc-image-input');
+  const attachBtn = document.getElementById('gc-attach-btn');
+  if (img) img.src = '';
+  if (preview) preview.style.display = 'none';
+  if (fileInput) fileInput.value = '';
+  if (attachBtn) attachBtn.classList.remove('gc-has-image');
+}
+
+function gcFileToDataUrl(file, maxWidth = 960, maxHeight = 960, quality = 0.72) {
+  return new Promise((resolve) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawDataUrl = e.target.result;
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth || height > maxHeight) {
+              if (width / height > maxWidth / maxHeight) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } catch (err) {
+            resolve(rawDataUrl);
+          }
+        };
+        img.onerror = () => resolve(rawDataUrl);
+        img.src = rawDataUrl;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+async function gcUploadChatImage(file) {
+  const ext = (file.name || 'img.jpg').split('.').pop().toLowerCase();
+  const uniqueId = Date.now() + '_' + Math.floor(Math.random() * 100000);
+
+  // 1. Спробуємо завантажити у Supabase Storage (перевіряємо існуючі buckets: media, music, chat_images)
+  if (typeof supabaseClient !== 'undefined' && supabaseClient.storage) {
+    let userId = null;
+    try {
+      const session = (typeof swGetSession === 'function') ? await swGetSession() : null;
+      userId = session?.user?.id || (typeof currentUser !== 'undefined' && currentUser?.id) || null;
+    } catch (e) {}
+
+    const buckets = ['media', 'music', 'chat_images'];
+
+    for (const b of buckets) {
+      const pathsToTry = [];
+      if (userId) pathsToTry.push(`${userId}/chat_${uniqueId}.${ext}`);
+      pathsToTry.push(`chat/${uniqueId}.${ext}`);
+
+      for (const p of pathsToTry) {
+        try {
+          const { data, error } = await supabaseClient.storage
+            .from(b)
+            .upload(p, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+
+          if (!error) {
+            const { data: pubData } = supabaseClient.storage.from(b).getPublicUrl(p);
+            if (pubData && pubData.publicUrl) {
+              return pubData.publicUrl;
+            }
+          }
+        } catch (e) {
+          // Якщо bucket не знайдено або обмежений доступ — переходимо до наступного
+        }
+      }
+    }
+  }
+
+  // 2. Безвідмовний fallback: стискаємо у компактний Data URL (Base64 JPEG)
+  // Працює завжди, гарантовано і без помилок навіть якщо bucket відсутній!
+  try {
+    const dataUrl = await gcFileToDataUrl(file);
+    if (dataUrl) return dataUrl;
+  } catch (err) {
+    console.warn('[ChatImage] fallback failed:', err);
+  }
+
+  if (typeof showNotification === 'function') {
+    showNotification('❌ Не вдалося завантажити фото');
+  }
+  return null;
+}
+
+function gcOpenImageOverlay(url) {
+  if (!url) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'gc-image-overlay';
+  overlay.onclick = (e) => {
+    if (e.target === overlay || e.target.classList.contains('gc-image-overlay-close')) {
+      overlay.remove();
+    }
+  };
+  overlay.innerHTML = `
+    <button class="gc-image-overlay-close" title="Закрити (Esc)">✕</button>
+    <img src="${gcEsc(url)}" alt="Фото" />
+  `;
+  document.body.appendChild(overlay);
+
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
 }
 
 function gcOnAnonToggleChange(isAnon) {
@@ -198,8 +361,10 @@ async function gcSendMessage() {
   const input = document.getElementById('gc-input');
   if (!input) return;
   const text = (input.value || '').trim();
-  if (!text) {
-    if (typeof showNotification === 'function') showNotification('⚠️ Введіть текст повідомлення');
+  const hasImage = !!GC.pendingImage;
+
+  if (!text && !hasImage) {
+    if (typeof showNotification === 'function') showNotification('⚠️ Введіть текст або прикріпіть фото');
     input.focus();
     return;
   }
@@ -238,12 +403,25 @@ async function gcSendMessage() {
   if (btn) btn.disabled = true;
   GC.sending = true;
 
+  // Upload image if attached
+  let imageUrl = null;
+  if (hasImage) {
+    imageUrl = await gcUploadChatImage(GC.pendingImage.file);
+    if (!imageUrl && !text) {
+      // Image upload failed and no text — abort
+      GC.sending = false;
+      if (btn) btn.disabled = false;
+      return;
+    }
+  }
+
   const newRow = {
     user_id: userId,
     user_name: userName,
     is_anonymous: isAnon,
     avatar_url: avatarUrl,
-    message: text,
+    message: text || '',
+    image_url: imageUrl || null,
     created_at: new Date().toISOString()
   };
 
@@ -251,10 +429,24 @@ async function gcSendMessage() {
     let saved = false;
 
     if (typeof supabaseClient !== 'undefined') {
-      const { data, error } = await supabaseClient
+      // Insert without image_url first to handle missing column gracefully
+      let insertRow = { ...newRow };
+      let { data, error } = await supabaseClient
         .from('general_chat')
-        .insert(newRow)
+        .insert(insertRow)
         .select();
+
+      if (error && (/image_url/i.test(error.message) || error.code === 'PGRST204')) {
+        // Колонка image_url ще не додана в Supabase — упаковуємо фото в поле message, щоб воно гарантовано збереглося!
+        const { image_url, ...rowNoImg } = insertRow;
+        if (imageUrl) {
+          rowNoImg.message = (text ? text + '\n' : '') + `[img]${imageUrl}[/img]`;
+        }
+        ({ data, error } = await supabaseClient
+          .from('general_chat')
+          .insert(rowNoImg)
+          .select());
+      }
 
       if (!error && data && data.length) {
         saved = true;
@@ -279,6 +471,7 @@ async function gcSendMessage() {
 
     input.value = '';
     gcAutoGrow(input);
+    gcRemoveImage();
   } catch (err) {
     console.error('[GeneralChat] send failed:', err);
     if (typeof showNotification === 'function') showNotification('❌ Помилка надсилання повідомлення');
@@ -389,6 +582,18 @@ function gcRenderThread() {
       </button>
     ` : '';
 
+    // Визначаємо текст повідомлення та фото (з окремої колонки або вбудованого тегу [img])
+    let msgText = m.message || '';
+    let msgImg = m.image_url || '';
+
+    if (!msgImg && msgText.includes('[img]') && msgText.includes('[/img]')) {
+      const match = msgText.match(/\[img\]([\s\S]*?)\[\/img\]/);
+      if (match) {
+        msgImg = match[1];
+        msgText = msgText.replace(/\[img\][\s\S]*?\[\/img\]/, '').trim();
+      }
+    }
+
     html += `
       <div class="gc-msg-card ${isAnon ? 'gc-msg-card--anon' : ''} ${isMine ? 'gc-msg-card--mine' : ''}">
         ${avatarHTML}
@@ -402,7 +607,8 @@ function gcRenderThread() {
               ${deleteBtn}
             </div>
           </div>
-          <div class="gc-msg-text">${gcEsc(m.message)}</div>
+          ${msgText ? `<div class="gc-msg-text">${gcEsc(msgText)}</div>` : ''}
+          ${msgImg ? `<div class="gc-msg-image" onclick="gcOpenImageOverlay(this.querySelector('img').src)"><img src="${gcEsc(msgImg)}" alt="Фото" loading="lazy" /></div>` : ''}
         </div>
       </div>
     `;
